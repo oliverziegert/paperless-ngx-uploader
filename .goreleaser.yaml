@@ -1,0 +1,192 @@
+# This is an example .goreleaser.yml file with some sensible defaults.
+# Make sure to check the documentation at https://goreleaser.com
+
+# The lines below are called `modelines`. See `:help modeline`
+# Feel free to remove those if you don't want/need to use them.
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+# vim: set ts=2 sw=2 tw=0 fo=cnqoj
+
+version: 2
+
+# Project name should ideally match the project name in your Cargo.toml.
+project_name: paperless-ngx-uploader
+
+before:
+  hooks:
+    - rustup default stable
+    - rustup component add llvm-tools
+    - cargo install --locked cargo-zigbuild
+    - cargo install --locked cargo-xwin
+    - rustup target add x86_64-unknown-linux-gnu
+    - rustup target add aarch64-unknown-linux-gnu
+    - rustup target add x86_64-apple-darwin
+    - rustup target add aarch64-apple-darwin
+    - rustup target add x86_64-pc-windows-msvc
+    #- rustup target add aarch64-pc-windows-msvc
+    - cargo fetch --locked
+
+# Actually builds the binaries.
+builds:
+  - builder: rust
+    tool: cargo-zigbuild
+    command: zigbuild
+    flags:
+      - --release
+    id: linux-gnu-builds
+    targets:
+      - x86_64-unknown-linux-gnu
+      - aarch64-unknown-linux-gnu
+      - x86_64-apple-darwin
+      - aarch64-apple-darwin
+  - builder: rust
+    tool: cargo-xwin
+    command: build
+    flags:
+      - --release
+    id: win-msvc-builds
+    targets:
+      - x86_64-pc-windows-msvc
+      #- aarch64-pc-windows-msvc
+
+
+# Creates archives for each target.
+archives:
+  - formats: [ 'tar.gz' ]
+    # this name template makes the OS and Arch compatible with the results of `uname`.
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+    # use zip for windows archives
+    format_overrides:
+      - goos: windows
+        formats: [ 'zip' ]
+
+checksum:
+  name_template: "checksums.txt"
+
+# Changelog configuration (will be in the github release).
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+
+# A footer to add to all releases.
+release:
+  footer: >-
+
+    ---
+
+    Released by [GoReleaser](https://github.com/goreleaser/goreleaser).
+
+# Creates Linux packages.
+nfpms:
+  - file_name_template: "{{ .ConventionalFileName }}"
+    maintainer: paperless-ngx <paperless-ngx@pc-ziegert.dev>
+    formats:
+      - deb
+      - apk
+      - rpm
+
+# Creates Darwin universal binaries.
+universal_binaries:
+  - replace: true
+
+# Enables source archives.
+source:
+  enabled: true
+
+# SBOMs for the archives.
+sboms:
+  - artifacts: archive
+
+# Sign binaries with cosign.
+signs:
+  - cmd: cosign
+    certificate: "${artifact}.pem"
+    args:
+      - sign-blob
+      - "--output-certificate=${certificate}"
+      - "--output-signature=${signature}"
+      - "${artifact}"
+      - "--yes"
+    artifacts: checksum
+
+# Create Docker images.
+# We create a manifest below, so here the images need the suffix with the
+# architecture.
+dockers:
+  - image_templates:
+      - "ghcr.io/oliverziegert/{{ .ProjectName }}:{{ .Tag }}-arm64"
+    dockerfile: Dockerfile
+    goarch: arm64
+    use: buildx
+    build_flag_templates:
+      - "--pull"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.name={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.source={{.GitURL}}"
+      - "--platform=linux/arm64"
+  - image_templates:
+      - "ghcr.io/oliverziegert/{{ .ProjectName }}:{{ .Tag }}-amd64"
+    dockerfile: Dockerfile
+    goarch: amd64
+    use: buildx
+    build_flag_templates:
+      - "--pull"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.name={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.source={{.GitURL}}"
+      - "--platform=linux/amd64"
+
+# Here we join both images into a Docker manifest.
+docker_manifests:
+  - name_template: "ghcr.io/oliverziegert/{{ .ProjectName }}:{{ .Tag }}"
+    image_templates:
+      - "ghcr.io/oliverziegert/{{ .ProjectName }}:{{ .Tag }}-arm64"
+      - "ghcr.io/oliverziegert/{{ .ProjectName }}:{{ .Tag }}-amd64"
+
+# Sign the Docker images with cosign as well.
+docker_signs:
+  - cmd: cosign
+    artifacts: manifests
+    args:
+      - "sign"
+      - "${artifact}"
+      - "--yes"
+
+# Sets up homebrew-taps.
+# PS: this will require a personal access token, as it is cross-repository.
+brews:
+  - repository:
+      owner: oliverziegert
+      name: homebrew-tap
+      token: "{{ .Env.GH_PAT }}"
+    url_template: "https://github.com/oliverziegert/homebrew-tap/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
+    directory: Formula
+    homepage: "https://github.com/oliverziegert/homebrew-tap"
+    description: Example rust release.
+    license: GPL-3.0
+    skip_upload: false
+
+
+#winget:
+#  - repository:
+#      owner: oliverziegert
+#      name: homebrew-tap
+#      branch: "{{.ProjectName}}-{{.Version}}"
+#      token: "{{ .Env.GH_PAT }}"
+#      pull_request:
+#        enabled: true
+#    publisher: oliverziegert
+#    short_description: "Software to create fast and easy drum rolls."
+#    description: "Software to create fast and easy drum rolls."
+#    license: "GPL-3.0"
