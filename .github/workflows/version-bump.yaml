@@ -5,7 +5,7 @@ on:
       - main
     types:
       - closed
-  workflow_call: {}
+  workflow_dispatch: {}
 
 jobs:
   version-bump:
