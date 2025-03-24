@@ -167,8 +167,6 @@ docker_signs:
 # PS: this will require a personal access token, as it is cross-repository.
 brews:
   - name: "{{ .ProjectName }}"
-    alternative_names:
-      - "{{ .ProjectName }}@{{ .Major }}.{{ .Minor }}"
     repository:
       owner: oliverziegert
       name: homebrew-tap
