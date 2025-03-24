@@ -2,6 +2,8 @@ name: release
 
 on:
   push:
+    branches:
+      - main
     # run only against tags
     tags:
       - "*"
