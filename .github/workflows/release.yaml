@@ -39,7 +39,7 @@ jobs:
         run: |
           curl -L "${{ secrets.MACOS_SDK_URL2 }}" | tar -J -x -C /opt
           curl -L "${{ secrets.MACOS_SDK_URL }}" | tar -J -x -C /opt
-      - uses: goreleaser/goreleaser-action@v6.2.1
+      - uses: goreleaser/goreleaser-action@v6.3.0
         with:
           distribution: goreleaser
           version: "~> v2"
