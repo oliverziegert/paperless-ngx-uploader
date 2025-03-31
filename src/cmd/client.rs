@@ -1,4 +1,4 @@
-use crate::lib::config::Config;
+use crate::cmd::config::Config;
 use http::header;
 use log::{debug, error, info};
 use regex::Regex;

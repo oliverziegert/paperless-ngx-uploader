@@ -1,8 +1,8 @@
-mod lib;
+mod cmd;
 
-use lib::logger::setup_logging;
-use lib::config::*;
-use lib::input::*;
+use cmd::logger::setup_logging;
+use cmd::config::*;
+use cmd::input::*;
 
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
@@ -144,7 +144,7 @@ pub fn upload(file: Option<PathBuf>,
               delete: bool,
               cfg: Config) -> Result<(), Box<dyn Error>> {
     debug!("Called: upload");
-    let client = lib::client::Client::new(cfg);
+    let client = cmd::client::Client::new(cfg);
     client.upload(file, folder, filter, archive, period, delete)
 }
 
