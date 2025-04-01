@@ -24,5 +24,10 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
-          cargo bump patch --git-tag          
+          cargo bump patch
+          cargo fetch
+          version=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[] | select(.name =="paperless-ngx-uploader") | .version')
+          git add Cargo.toml Cargo.lock
+          git commit -m "chore: bump version to $version"
+          git tag "v$version"
           git push origin main --tags
