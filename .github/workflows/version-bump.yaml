@@ -5,13 +5,12 @@ on:
       - main
     types:
       - closed
-  workflow_dispatch: {}
 
 jobs:
   version-bump:
     permissions:
       contents: write
-    if: ${{ github.event.pull_request.merged || github.event_name == 'workflow_dispatch' }}
+    if: ${{ github.event.pull_request.merged }}
     runs-on: ubuntu-latest
     steps:
       - name: Install cargo-bump
@@ -31,3 +30,5 @@ jobs:
           git commit -m "chore: bump version to $version"
           git tag "v$version"
           git push origin main --tags
+  call-workflow-passing-data:
+    uses: oliverziegert/paperless-ngx-uploader/.github/workflows/release.yaml@main
