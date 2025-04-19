@@ -33,9 +33,11 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Install macOS SDKs
+        shell: bash
+        env:
+          MACOS_SDK_URL: ${{ secrets.MACOS_SDK_URL }}
         run: |
-          curl -L "${{ secrets.MACOS_SDK_URL2 }}" | tar -J -x -C /opt
-          curl -L "${{ secrets.MACOS_SDK_URL }}" | tar -J -x -C /opt
+          curl -L "$MACOS_SDK_URL" | tar -J -x -C /opt
       - uses: goreleaser/goreleaser-action@v6.3.0
         with:
           distribution: goreleaser
