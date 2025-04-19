@@ -31,6 +31,8 @@ jobs:
           git tag "v$version"
           git push origin main --tags
   call-workflow-passing-data:
+    needs: version-bump
+    if: ${{ github.event.pull_request.merged }}
     permissions:
       contents: write
       packages: write
