@@ -17,7 +17,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Setup Zig Compiler
-        uses: mlugg/setup-zig@v1.2.1
+        uses: mlugg/setup-zig@v1.2.2
       - name: cosign-installer
         uses: sigstore/cosign-installer@v3.8.2
       - name: Anchore SBOM Action
