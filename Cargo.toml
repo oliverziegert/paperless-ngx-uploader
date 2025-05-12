@@ -10,7 +10,7 @@ env_logger = "0.11"
 log = { version = "0.4", features = ["kv"] }
 reqwest = { version = "0.12", features = ["blocking", "multipart", "rustls-tls", "http2", "macos-system-configuration", "charset"], default-features = false }
 http = "1.2"
-confy = { version = "0.6", features = ["yaml_conf"], default-features = false }
+confy = { version = "1.0", features = ["yaml_conf"], default-features = false }
 serde = { version = "1.0", features = ["derive"] }
 inquire = { version = "0.7"}
 regex = "1.11.1"
