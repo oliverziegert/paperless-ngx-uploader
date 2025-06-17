@@ -19,7 +19,7 @@ jobs:
       - name: Setup Zig Compiler
         uses: mlugg/setup-zig@v2.0.1
       - name: cosign-installer
-        uses: sigstore/cosign-installer@v3.8.2
+        uses: sigstore/cosign-installer@v3.9.0
       - name: Anchore SBOM Action
         uses: anchore/sbom-action/download-syft@v0.20.1
       - name: Docker Setup QEMU
