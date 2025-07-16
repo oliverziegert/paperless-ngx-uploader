@@ -1,4 +1,4 @@
-FROM alpine:3.22.0
+FROM alpine:3.22.1
 
 COPY paperless-ngx-uploader /usr/bin/paperless-ngx-uploader
 
