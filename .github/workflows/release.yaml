@@ -21,7 +21,7 @@ jobs:
       - name: cosign-installer
         uses: sigstore/cosign-installer@v3.10.0
       - name: Anchore SBOM Action
-        uses: anchore/sbom-action/download-syft@v0.20.5
+        uses: anchore/sbom-action/download-syft@v0.20.6
       - name: Docker Setup QEMU
         uses: docker/setup-qemu-action@v3.6.0
       - name: Docker Setup Buildx
