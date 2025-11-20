@@ -15,7 +15,7 @@ jobs:
     steps:
       - name: Install cargo-bump
         run: cargo install cargo-bump
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           persist-credentials: 'true'
