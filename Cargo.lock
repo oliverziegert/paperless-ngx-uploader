@@ -210,7 +210,7 @@ version = "3.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fde0e0ec90c9dfb3b4b1a0891a7dcd0e2bffde2f7efed5fe7c9bb00e5bfb915e"
 dependencies = [
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -370,7 +370,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -957,20 +957,21 @@ dependencies = [
 
 [[package]]
 name = "mockito"
-version = "1.7.0"
+version = "1.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7760e0e418d9b7e5777c0374009ca4c93861b9066f18cb334a20ce50ab63aa48"
+checksum = "7e0603425789b4a70fcc4ac4f5a46a566c116ee3e2a6b768dc623f7719c611de"
 dependencies = [
  "assert-json-diff",
  "bytes",
  "colored",
- "futures-util",
+ "futures-core",
  "http",
  "http-body",
  "http-body-util",
  "hyper",
  "hyper-util",
  "log",
+ "pin-project-lite",
  "rand",
  "regex",
  "serde_json",
@@ -1135,7 +1136,7 @@ dependencies = [
  "once_cell",
  "socket2",
  "tracing",
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -1301,7 +1302,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys",
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
