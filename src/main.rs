@@ -1,8 +1,8 @@
-mod lib;
+mod cmd;
 
-use lib::logger::setup_logging;
-use lib::config::*;
-use lib::input::*;
+use cmd::logger::setup_logging;
+use cmd::config::*;
+use cmd::input::*;
 
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
@@ -13,9 +13,9 @@ use log::{debug, error, info};
 #[command(version, about, long_about = None)]
 #[command(propagate_version = true)]
 struct Cli {
-    /// Sets a custom Config file
-    #[arg(short, long, value_name = "CONFIG FILE", default_value = "./paperless-ngx-uploader.yaml")]
-    config: PathBuf,
+    /// Sets a custom config file path (defaults to platform-specific config directory)
+    #[arg(short, long, value_name = "FILE")]
+    config: Option<PathBuf>,
 
     /// Turn debugging information on
     #[arg(short, long, action = clap::ArgAction::Count)]
@@ -73,7 +73,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     setup_logging(cli.verbose);
 
     // Load Config file
-    let mut cfg= match Config::load(&cli.config) {
+    let mut cfg= match Config::load(cli.config.as_ref()) {
         Ok(config) => config,
         Err(e) => {
             error!("Error loading config: {}", e);
@@ -97,11 +97,11 @@ fn main() -> Result<(), Box<dyn Error>> {
 fn init(endpoint: Option<String>, token: Option<String>, cfg: &mut Config) -> Result<(), Box<dyn Error>> {
     debug!("init called: endpoint: {:#?} token: {:#?}", endpoint, token);
     if let Some(endpoint) = endpoint {
-        cfg.endpoint = endpoint;
+        cfg.public_config.endpoint = endpoint;
     } else {
         match get_endpoint_by_prompt() {
             Ok(endpoint) => {
-                cfg.endpoint = endpoint;
+                cfg.public_config.endpoint = endpoint;
             }
             Err(e) => {
                 error!("Error getting endpoint: {}", e);
@@ -111,11 +111,11 @@ fn init(endpoint: Option<String>, token: Option<String>, cfg: &mut Config) -> Re
     }
 
     if let Some(token) = token {
-        cfg.token = token;
+        cfg.private_config.token = token;
     } else {
         match get_token_by_prompt() {
             Ok(token) => {
-                cfg.token = token;
+                cfg.private_config.token = token;
             }
             Err(e) => {
                 error!("Error getting token: {}", e);
@@ -124,7 +124,7 @@ fn init(endpoint: Option<String>, token: Option<String>, cfg: &mut Config) -> Re
         }
     }
 
-    match Config::save(cfg) {
+    match cfg.save() {
         Err(e) => {
             error!("Error saving config: {}", e);
             Err("Error saving config".into())
@@ -144,7 +144,7 @@ pub fn upload(file: Option<PathBuf>,
               delete: bool,
               cfg: Config) -> Result<(), Box<dyn Error>> {
     debug!("Called: upload");
-    let client = lib::client::Client::new(cfg);
+    let client = cmd::client::Client::new(cfg);
     client.upload(file, folder, filter, archive, period, delete)
 }
 
