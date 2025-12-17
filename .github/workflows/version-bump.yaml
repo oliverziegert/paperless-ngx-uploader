@@ -1,0 +1,41 @@
+name: version-bump
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - closed
+
+jobs:
+  version-bump:
+    permissions:
+      contents: write
+    if: ${{ github.event.pull_request.merged }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install cargo-bump
+        run: cargo install cargo-bump
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: 'true'
+      - name: Bump version
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
+          cargo bump patch
+          cargo fetch
+          version=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[] | select(.name =="paperless-ngx-uploader") | .version')
+          git add Cargo.toml Cargo.lock
+          git commit -m "chore: bump version to $version"
+          git tag "v$version"
+          git push origin main --tags
+  call-workflow-passing-data:
+    needs: version-bump
+    if: ${{ github.event.pull_request.merged }}
+    permissions:
+      contents: write
+      packages: write
+      issues: write
+      id-token: write
+    uses: ./.github/workflows/release.yaml
