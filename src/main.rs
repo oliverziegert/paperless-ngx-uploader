@@ -72,17 +72,18 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Set up logging
     setup_logging(cli.verbose);
 
-    // Load Config file
-    let mut cfg= match Config::load(cli.config.as_ref()) {
-        Ok(config) => config,
-        Err(e) => {
-            error!("Error loading config: {}", e);
-            return Err(e.into());
-        },
-    };
-
     match cli.command {
-        Commands::Init {endpoint, token} => init(endpoint, token, &mut cfg),
+        Commands::Init {endpoint, token} => {
+            // For init, start with a fresh default config (don't try to load existing)
+            let mut cfg = Config::default();
+
+            // If a custom config path was provided, set it
+            if let Some(path) = cli.config {
+                cfg.public_config.path = path;
+            }
+
+            init(endpoint, token, &mut cfg)
+        },
         Commands::Upload {
             file,
             folder,
@@ -90,7 +91,18 @@ fn main() -> Result<(), Box<dyn Error>> {
             archive,
             period,
             delete,
-        } => upload(file, folder, filter, archive, period, delete, cfg),
+        } => {
+            // For upload, load existing config (must exist)
+            let cfg = match Config::load(cli.config.as_ref()) {
+                Ok(config) => config,
+                Err(e) => {
+                    error!("Error loading config: {}", e);
+                    return Err(e.into());
+                },
+            };
+
+            upload(file, folder, filter, archive, period, delete, cfg)
+        },
     }
 }
 
