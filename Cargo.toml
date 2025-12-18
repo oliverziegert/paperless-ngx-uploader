@@ -1,19 +1,23 @@
 [package]
 name = "paperless-ngx-uploader"
-version = "0.1.7"
+version = "0.1.1"
 edition = "2021"
 authors = ["paperless-ngx <paperless-ngx@pc-ziegert.dev>"]
 
 [dependencies]
-clap = { version = "4.5", features = ["derive"] }
-env_logger = "0.11"
-log = { version = "0.4", features = ["kv"] }
-reqwest = { version = "0.12", features = ["blocking", "multipart", "rustls-tls", "http2", "macos-system-configuration", "charset"], default-features = false }
-http = "1.2"
-confy = { version = "2.0", features = ["yaml_conf"], default-features = false }
-serde = { version = "1.0", features = ["derive"] }
-inquire = { version = "0.9"}
-regex = "1.11.1"
+clap = { version = "4.5.53", features = ["derive"] }
+confy = { version = "2.0.0", features = ["yaml_conf"], default-features = false }
+dirs = { version = "6.0.0" }
+env_logger = "0.11.8"
+http = "1.4.0"
+inquire = { version = "0.9.1" }
+keyring = { version = "3.6.3", features = ["apple-native", "linux-native", "windows-native"] }
+log = { version = "0.4.29", features = ["kv"] }
+regex = "1.12.2"
+reqwest = { version = "0.12.26", features = ["blocking", "multipart", "rustls-tls", "http2", "macos-system-configuration", "charset"], default-features = false }
+serde = { version = "1.0.228", features = ["derive"] }
+thiserror = { version = "2.0.17"}
 
 [dev-dependencies]
-mockito = "1.6"
+mockito = { version = "1.7.1" }
+tempfile = { version = "3.23.0" }

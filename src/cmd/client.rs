@@ -36,7 +36,7 @@ impl Client {
         let mut header = header::HeaderMap::new();
         debug!("HeaderMap created");
 
-        let header_auth_value = format!("{}{}", HEADER_AUTH_PREFIX, cfg.token);
+        let header_auth_value = format!("{}{}", HEADER_AUTH_PREFIX, cfg.private_config.token);
         let mut header_auth_value = header::HeaderValue::from_str(header_auth_value.as_str()).unwrap();
         header_auth_value.set_sensitive(true);
         header.insert(header::AUTHORIZATION, header_auth_value);
@@ -135,7 +135,7 @@ impl Client {
         form = form.text("title", title.clone());
         debug!("file_name: {}", &title);
 
-        let response = match self.http.post(&self.cfg.endpoint).multipart(form).send() {
+        let response = match self.http.post(&self.cfg.public_config.endpoint).multipart(form).send() {
             Ok(response) => response,
             Err(e) => {
                 error!("Error uploading file: {}", e);
@@ -363,13 +363,13 @@ mod tests {
 
         // Create a test config
         let mut cfg = Config::default();
-        cfg.token = "test_token".to_string();
+        cfg.private_config.token = "test_token".to_string();
 
         // Create a new client
         let client = Client::new(cfg);
 
         // Check that the client was created successfully
-        assert_eq!(client.cfg.token, "test_token");
+        assert_eq!(client.cfg.private_config.token, "test_token");
     }
 
     #[test]
@@ -428,8 +428,8 @@ mod tests {
             .create();
 
         let mut cfg = Config::default();
-        cfg.token = "token".to_string();
-        cfg.endpoint = format!("{}/api/endpoint", _s.url());
+        cfg.private_config.token = "token".to_string();
+        cfg.public_config.endpoint = format!("{}/api/endpoint", _s.url());
         let client = Client::new(cfg);
 
         let file_path = PathBuf::from("test_file.txt");
@@ -466,8 +466,8 @@ mod tests {
             .create();
 
         let mut cfg = Config::default();
-        cfg.token = "token".to_string();
-        cfg.endpoint = format!("{}/api/endpoint", _s.url());
+        cfg.private_config.token = "token".to_string();
+        cfg.public_config.endpoint = format!("{}/api/endpoint", _s.url());
         let client = Client::new(cfg);
 
         let file_path = PathBuf::from("test_file.txt");
@@ -492,8 +492,8 @@ mod tests {
             .create();
 
         let mut cfg = Config::default();
-        cfg.token = "token".to_string();
-        cfg.endpoint = format!("{}/api/endpoint", _s.url());
+        cfg.private_config.token = "token".to_string();
+        cfg.public_config.endpoint = format!("{}/api/endpoint", _s.url());
         let client = Client::new(cfg);
 
 
