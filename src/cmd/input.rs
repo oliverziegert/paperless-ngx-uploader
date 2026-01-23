@@ -22,7 +22,7 @@ pub fn get_token_by_prompt() -> Result<String, Box<dyn Error>> {
     let input = Password::new("Token").prompt();
     match input {
         Ok(input) => {
-            info!("Endpoint entered: {}", input);
+            info!("Token entered successfully");
             Ok(input)
         },
         Err(e) => {
