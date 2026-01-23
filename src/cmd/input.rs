@@ -25,6 +25,14 @@ pub fn get_endpoint_by_prompt() -> Result<String, Box<dyn Error>> {
     }
 }
 
+/// Prompts the user to enter a Paperless-ngx authentication token.
+///
+/// Displays an interactive password prompt where input is hidden for security.
+/// Returns the user's input as a string.
+///
+/// # Errors
+///
+/// Returns an error if the user cancels the prompt or if input reading fails.
 pub fn get_token_by_prompt() -> Result<String, Box<dyn Error>> {
     debug!("get_token_by_prompt called");
     let input = Password::new("Token").prompt();

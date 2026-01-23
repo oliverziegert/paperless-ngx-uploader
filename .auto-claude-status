@@ -1,0 +1,25 @@
+{
+  "active": true,
+  "spec": "004-add-docstrings-to-input-rs-user-prompt-functions",
+  "state": "building",
+  "subtasks": {
+    "completed": 1,
+    "total": 2,
+    "in_progress": 1,
+    "failed": 0
+  },
+  "phase": {
+    "current": "Add Function Documentation",
+    "id": null,
+    "total": 2
+  },
+  "workers": {
+    "active": 0,
+    "max": 1
+  },
+  "session": {
+    "number": 3,
+    "started_at": "2026-01-23T23:25:38.397399"
+  },
+  "last_update": "2026-01-23T23:29:41.980451"
+}
