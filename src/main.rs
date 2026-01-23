@@ -107,7 +107,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 fn init(endpoint: Option<String>, token: Option<String>, cfg: &mut Config) -> Result<(), Box<dyn Error>> {
-    debug!("init called: endpoint: {:#?} token: {:#?}", endpoint, token);
+    debug!("init called: endpoint: {:#?} token: {}", endpoint, if token.is_some() { "<provided>" } else { "<not provided>" });
     if let Some(endpoint) = endpoint {
         cfg.public_config.endpoint = endpoint;
     } else {
