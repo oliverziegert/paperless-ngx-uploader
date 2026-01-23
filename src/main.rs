@@ -32,10 +32,6 @@ enum Commands {
         /// The url to your Paperless-ngx instance
         #[arg(short, long, value_name = "ENDPOINT")]
         endpoint: Option<String>,
-
-        /// The token for your Paperless-ngx instance
-        #[arg(short, long, value_name = "TOKEN")]
-        token: Option<String>,
     },
 
     /// Uploads a file or a folder to your Paperless-ngx instance
@@ -73,7 +69,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     setup_logging(cli.verbose);
 
     match cli.command {
-        Commands::Init {endpoint, token} => {
+        Commands::Init {endpoint} => {
             // For init, start with a fresh default config (don't try to load existing)
             let mut cfg = Config::default();
 
@@ -82,7 +78,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 cfg.public_config.path = path;
             }
 
-            init(endpoint, token, &mut cfg)
+            init(endpoint, &mut cfg)
         },
         Commands::Upload {
             file,
@@ -106,8 +102,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 }
 
-fn init(endpoint: Option<String>, token: Option<String>, cfg: &mut Config) -> Result<(), Box<dyn Error>> {
-    debug!("init called: endpoint: {:#?} token: {:#?}", endpoint, token);
+fn init(endpoint: Option<String>, cfg: &mut Config) -> Result<(), Box<dyn Error>> {
+    debug!("init called: endpoint: {:#?}", endpoint);
     if let Some(endpoint) = endpoint {
         cfg.public_config.endpoint = endpoint;
     } else {
@@ -122,17 +118,13 @@ fn init(endpoint: Option<String>, token: Option<String>, cfg: &mut Config) -> Re
         }
     }
 
-    if let Some(token) = token {
-        cfg.private_config.token = token;
-    } else {
-        match get_token_by_prompt() {
-            Ok(token) => {
-                cfg.private_config.token = token;
-            }
-            Err(e) => {
-                error!("Error getting token: {}", e);
-                return Err(e.into());
-            }
+    match get_token_by_prompt() {
+        Ok(token) => {
+            cfg.private_config.token = token;
+        }
+        Err(e) => {
+            error!("Error getting token: {}", e);
+            return Err(e.into());
         }
     }
 
