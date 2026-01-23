@@ -2,6 +2,14 @@ use std::error::Error;
 use inquire::{Password, Text};
 use log::{debug, error, info};
 
+/// Prompts the user to enter a Paperless-ngx endpoint URL.
+///
+/// Displays an interactive prompt with a placeholder example (http://localhost:8000).
+/// Returns the user's input as a string.
+///
+/// # Errors
+///
+/// Returns an error if the user cancels the prompt or if input reading fails.
 pub fn get_endpoint_by_prompt() -> Result<String, Box<dyn Error>> {
     debug!("get_endpoint_by_prompt called");
     let input = Text::new("Endpoint").with_placeholder("http://localhost:8000").prompt();
