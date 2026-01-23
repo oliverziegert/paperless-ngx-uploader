@@ -1,0 +1,25 @@
+{
+  "active": true,
+  "spec": "007-document-keyring-setup-function-in-keyring-rs",
+  "state": "building",
+  "subtasks": {
+    "completed": 1,
+    "total": 2,
+    "in_progress": 1,
+    "failed": 0
+  },
+  "phase": {
+    "current": "Add Documentation",
+    "id": null,
+    "total": 2
+  },
+  "workers": {
+    "active": 0,
+    "max": 1
+  },
+  "session": {
+    "number": 3,
+    "started_at": "2026-01-23T23:25:48.608274"
+  },
+  "last_update": "2026-01-23T23:30:11.061910"
+}
