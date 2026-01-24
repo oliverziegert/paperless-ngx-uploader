@@ -32,6 +32,10 @@ enum Commands {
         /// The url to your Paperless-ngx instance
         #[arg(short, long, value_name = "ENDPOINT")]
         endpoint: Option<String>,
+
+        /// Allow insecure HTTP connections (not recommended for production)
+        #[arg(long)]
+        allow_insecure: bool,
     },
 
     /// Uploads a file or a folder to your Paperless-ngx instance
@@ -69,7 +73,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     setup_logging(cli.verbose);
 
     match cli.command {
-        Commands::Init {endpoint} => {
+        Commands::Init {endpoint, allow_insecure: _allow_insecure} => {
             // For init, start with a fresh default config (don't try to load existing)
             let mut cfg = Config::default();
 
