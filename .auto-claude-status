@@ -1,15 +1,15 @@
 {
   "active": true,
-  "spec": "007-document-keyring-setup-function-in-keyring-rs",
-  "state": "building",
+  "spec": "006-add-readme-badges-and-paperless-ngx-compatibility-",
+  "state": "planning",
   "subtasks": {
-    "completed": 1,
-    "total": 2,
+    "completed": 0,
+    "total": 0,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Add Documentation",
+    "current": "Update README Documentation",
     "id": null,
     "total": 2
   },
@@ -18,8 +18,8 @@
     "max": 1
   },
   "session": {
-    "number": 3,
-    "started_at": "2026-01-23T23:25:48.608274"
+    "number": 2,
+    "started_at": "2026-01-24T14:31:21.391620"
   },
-  "last_update": "2026-01-23T23:30:11.061910"
+  "last_update": "2026-01-24T14:34:14.351088"
 }
