@@ -1,6 +1,6 @@
 # Paperless-ngx Uploader
 
-![Build Status](https://github.com/oliverziegert/paperless-ngx-uploader/workflows/test/badge.svg)
+![Build Status](https://github.com/oliverziegert/paperless-ngx-uploader/actions/workflows/test.yaml/badge.svg)
 ![Version](https://img.shields.io/github/v/release/oliverziegert/paperless-ngx-uploader)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue.svg)
 
