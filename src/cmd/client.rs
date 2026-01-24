@@ -125,6 +125,25 @@ impl Client {
         Ok(())
     }
 
+    /// Uploads a list of files to Paperless-ngx.
+    ///
+    /// This method iterates through the provided files and attempts to upload
+    /// each one. Successfully uploaded files are collected and returned. If an
+    /// individual file upload fails, the error is logged and the method continues
+    /// with the remaining files.
+    ///
+    /// # Arguments
+    ///
+    /// * `files` - A vector of file paths to upload
+    ///
+    /// # Returns
+    ///
+    /// Returns a vector of paths for files that were successfully uploaded.
+    ///
+    /// # Errors
+    ///
+    /// This method does not return errors. Individual file upload failures are
+    /// logged but do not stop the upload process.
     fn upload_files(&self, files: &Vec<PathBuf>) -> Result<Vec<PathBuf>, Box<dyn Error>> {
         debug!("Called: Client::upload_files");
         let mut files_archived: Vec<PathBuf> = Vec::new();
