@@ -161,6 +161,23 @@ impl Client {
         Ok(files_archived)
     }
 
+    /// Uploads a single file to Paperless-ngx.
+    ///
+    /// This method creates a multipart form containing the file and its title
+    /// (derived from the filename), then posts it to the configured Paperless-ngx
+    /// endpoint. The upload is considered successful only if the server responds
+    /// with HTTP 200 OK.
+    ///
+    /// # Arguments
+    ///
+    /// * `file` - Path to the file to upload
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - The multipart form cannot be created
+    /// - The HTTP request fails (network error, authentication failure)
+    /// - The server returns a non-200 status code
     fn upload_file(&self, file: &PathBuf) -> Result<(), Box<dyn Error>> {
         debug!("Called: Client::upload_file");
 
