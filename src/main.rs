@@ -123,7 +123,7 @@ fn init(endpoint: Option<String>, allow_insecure: bool, cfg: &mut Config) -> Res
             }
             Err(e) => {
                 error!("Error getting endpoint: {}", e);
-                return Err(e.into());
+                return Err(e);
             }
         }
     }
@@ -146,7 +146,7 @@ fn init(endpoint: Option<String>, allow_insecure: bool, cfg: &mut Config) -> Res
         }
         Err(e) => {
             error!("Error getting token: {}", e);
-            return Err(e.into());
+            return Err(e);
         }
     }
 
@@ -162,6 +162,7 @@ fn init(endpoint: Option<String>, allow_insecure: bool, cfg: &mut Config) -> Res
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn upload(file: Option<PathBuf>,
               folder: Option<PathBuf>,
               filter: String,

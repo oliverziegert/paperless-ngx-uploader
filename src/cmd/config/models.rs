@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 ///
 /// This separation ensures sensitive credentials are stored securely
 /// in the platform's native credential manager rather than in plaintext files.
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Default)]
 pub struct Config {
     /// Public configuration (endpoint URL) stored in YAML file
     pub public_config: PublicConfig,

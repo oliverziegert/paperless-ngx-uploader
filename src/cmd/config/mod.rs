@@ -16,14 +16,6 @@ pub use crate::cmd::config::models::Config;
 
 const CONFIG_FILE_NAME: &str = "config.yaml";
 
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            public_config: PublicConfig::default(),
-            private_config: PrivateConfig::default(),
-        }
-    }
-}
 
 impl Default for PublicConfig {
     fn default() -> Self {
