@@ -144,7 +144,7 @@ impl Client {
     ///
     /// This method does not return errors. Individual file upload failures are
     /// logged but do not stop the upload process.
-    fn upload_files(&self, files: &Vec<PathBuf>) -> Result<Vec<PathBuf>, Box<dyn Error>> {
+    fn upload_files(&self, files: &[PathBuf]) -> Result<Vec<PathBuf>, Box<dyn Error>> {
         debug!("Called: Client::upload_files");
         let mut files_archived: Vec<PathBuf> = Vec::new();
         for file in files.iter() {
@@ -262,7 +262,7 @@ fn aggregate_files(
 /// # Errors
 ///
 /// Returns an error if any file operation fails during the archiving process.
-fn archive_files(files: &Vec<PathBuf>) -> Result<(), Box<dyn Error>> {
+fn archive_files(files: &[PathBuf]) -> Result<(), Box<dyn Error>> {
     debug!("Starting archive_files");
     for file in files {
         debug!("Attempting to archive file: {:?}", file);
@@ -321,7 +321,7 @@ fn archive_file(file: &PathBuf) -> Result<(), Box<dyn Error>> {
 /// # Errors
 ///
 /// Logs an error if any file cannot be deleted.
-fn delete_expired_files(files: &Vec<PathBuf>, period: usize) -> Result<(), Box<dyn Error>> {
+fn delete_expired_files(files: &[PathBuf], period: usize) -> Result<(), Box<dyn Error>> {
     debug!("Called: Client::delete_expired_files");
     // Iterate over each file in the list
     for file in files.iter() {
@@ -386,7 +386,7 @@ fn delete_expired_file(file: &PathBuf, period: usize) -> Result<(), Box<dyn Erro
 ///
 /// The title is the filename without its extension, truncated to a maximum length of
 /// `MAX_TITLE_LENGTH`. This is used as the title when uploading the file to Paperless-ngx.
-fn get_title_from_filename(file: &PathBuf) -> String {
+fn get_title_from_filename(file: &std::path::Path) -> String {
     let file_name = match file.file_name() {
         Some(name) => name.to_str().unwrap(),
         None => "",

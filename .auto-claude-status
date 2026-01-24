@@ -1,25 +1,25 @@
 {
   "active": true,
-  "spec": "006-add-readme-badges-and-paperless-ngx-compatibility-",
-  "state": "planning",
+  "spec": "003-add-https-enforcement-for-paperless-ngx-endpoint-u",
+  "state": "building",
   "subtasks": {
-    "completed": 0,
-    "total": 0,
+    "completed": 6,
+    "total": 12,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Update README Documentation",
+    "current": "Integrate Validation into Workflow",
     "id": null,
-    "total": 2
+    "total": 3
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 2,
-    "started_at": "2026-01-24T14:31:21.391620"
+    "number": 4,
+    "started_at": "2026-01-24T23:38:53.883053"
   },
-  "last_update": "2026-01-24T14:34:14.351088"
+  "last_update": "2026-01-24T23:42:58.582947"
 }

@@ -17,6 +17,7 @@ regex = "1.12.2"
 reqwest = { version = "0.12.26", features = ["blocking", "multipart", "rustls-tls", "http2", "macos-system-configuration", "charset"], default-features = false }
 serde = { version = "1.0.228", features = ["derive"] }
 thiserror = { version = "2.0.17"}
+url = "2.5"
 
 [dev-dependencies]
 mockito = { version = "1.7.1" }

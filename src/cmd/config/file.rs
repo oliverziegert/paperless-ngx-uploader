@@ -17,6 +17,7 @@ impl HandleConfig for PublicConfig {
         let loaded: PublicConfig = confy::load_path(&self.path)
             .map_err(|_| CmdError::ConfigFileLoadFailed(self.path.display().to_string()))?;
         self.endpoint = loaded.endpoint;
+        self.allow_insecure = loaded.allow_insecure;
         // Note: path is not overwritten - it's runtime state, not stored config
         debug!("The configuration file path is: {:#?}", &self.path.display());
         debug!("The configuration is:");
@@ -27,7 +28,7 @@ impl HandleConfig for PublicConfig {
     fn save(&self) -> Result<(), CmdError> {
         debug!("Config::PublicConfig::save called");
         debug!("Saving Config: {:#?}", self);
-        confy::store_path(&self.path, &self)
+        confy::store_path(&self.path, self)
             .map_err(|_| CmdError::ConfigFileSaveFailed(self.path.display().to_string()))
     }
 
