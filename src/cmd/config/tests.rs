@@ -31,6 +31,7 @@ mod public_config_tests {
         // Create a config file with known content
         let initial_config = PublicConfig {
             endpoint: "http://test.example.com".to_string(),
+            allow_insecure: false,
             path: config_path.clone(),
         };
         initial_config.save().unwrap();
@@ -38,6 +39,7 @@ mod public_config_tests {
         // Load the config
         let mut loaded_config = PublicConfig {
             endpoint: String::new(),
+            allow_insecure: false,
             path: config_path.clone(),
         };
         loaded_config.load().unwrap();
@@ -56,6 +58,7 @@ mod public_config_tests {
         // Try to load a non-existent config
         let mut config = PublicConfig {
             endpoint: "default_endpoint".to_string(),
+            allow_insecure: false,
             path: config_path.clone(),
         };
 
@@ -74,6 +77,7 @@ mod public_config_tests {
         // Create and save a config
         let config = PublicConfig {
             endpoint: "http://save-test.example.com".to_string(),
+            allow_insecure: false,
             path: config_path.clone(),
         };
         config.save().unwrap();
@@ -84,6 +88,7 @@ mod public_config_tests {
         // Verify we can load it back
         let mut loaded_config = PublicConfig {
             endpoint: String::new(),
+            allow_insecure: false,
             path: config_path.clone(),
         };
         loaded_config.load().unwrap();
@@ -100,6 +105,7 @@ mod public_config_tests {
         // Create a config file
         let config = PublicConfig {
             endpoint: "http://delete-test.example.com".to_string(),
+            allow_insecure: false,
             path: config_path.clone(),
         };
         config.save().unwrap();
@@ -121,6 +127,7 @@ mod public_config_tests {
 
         let config = PublicConfig {
             endpoint: "http://test.example.com".to_string(),
+            allow_insecure: false,
             path: config_path.clone(),
         };
 
@@ -147,6 +154,7 @@ mod public_config_tests {
         // Save config
         let config = PublicConfig {
             endpoint: original_endpoint.to_string(),
+            allow_insecure: false,
             path: config_path.clone(),
         };
         config.save().unwrap();
@@ -154,6 +162,7 @@ mod public_config_tests {
         // Load it back
         let mut loaded_config = PublicConfig {
             endpoint: String::new(),
+            allow_insecure: false,
             path: config_path.clone(),
         };
         loaded_config.load().unwrap();
@@ -278,6 +287,7 @@ mod config_integration_tests {
         let config = Config {
             public_config: PublicConfig {
                 endpoint: "http://integration.example.com".to_string(),
+                allow_insecure: false,
                 path: config_path.clone(),
             },
             private_config: PrivateConfig {
@@ -323,6 +333,7 @@ mod config_integration_tests {
         let config = Config {
             public_config: PublicConfig {
                 endpoint: original_endpoint.to_string(),
+                allow_insecure: false,
                 path: config_path.clone(),
             },
             private_config: PrivateConfig {
@@ -362,6 +373,7 @@ mod config_integration_tests {
         let config = Config {
             public_config: PublicConfig {
                 endpoint: "http://delete-integration.example.com".to_string(),
+                allow_insecure: false,
                 path: config_path.clone(),
             },
             private_config: PrivateConfig {
