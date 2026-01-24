@@ -67,6 +67,28 @@ impl Client {
         Self { cfg, http: client }
     }
 
+    /// Uploads documents to Paperless-ngx with optional archival and cleanup.
+    ///
+    /// This method aggregates files from either a single file or a folder, filters
+    /// them by the provided regex pattern, uploads them to the Paperless-ngx endpoint,
+    /// and optionally archives uploaded files and deletes expired files.
+    ///
+    /// # Arguments
+    ///
+    /// * `file` - Optional path to a single file to upload
+    /// * `folder` - Optional path to a folder containing files to upload
+    /// * `filter` - Regex pattern to filter file names
+    /// * `archive` - If true, successfully uploaded files are archived
+    /// * `period` - Number of days after which files are considered expired (used with `delete`)
+    /// * `delete` - If true, files older than `period` days are deleted
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - File aggregation fails (invalid regex, folder not readable)
+    /// - File upload fails (network error, authentication failure, server error)
+    /// - Archival fails (unable to create archive folder, file move error)
+    /// - Deletion fails (unable to delete expired files)
     pub(crate) fn upload(
         &self,
         file: Option<PathBuf>,
@@ -103,6 +125,25 @@ impl Client {
         Ok(())
     }
 
+    /// Uploads a list of files to Paperless-ngx.
+    ///
+    /// This method iterates through the provided files and attempts to upload
+    /// each one. Successfully uploaded files are collected and returned. If an
+    /// individual file upload fails, the error is logged and the method continues
+    /// with the remaining files.
+    ///
+    /// # Arguments
+    ///
+    /// * `files` - A vector of file paths to upload
+    ///
+    /// # Returns
+    ///
+    /// Returns a vector of paths for files that were successfully uploaded.
+    ///
+    /// # Errors
+    ///
+    /// This method does not return errors. Individual file upload failures are
+    /// logged but do not stop the upload process.
     fn upload_files(&self, files: &Vec<PathBuf>) -> Result<Vec<PathBuf>, Box<dyn Error>> {
         debug!("Called: Client::upload_files");
         let mut files_archived: Vec<PathBuf> = Vec::new();
@@ -120,6 +161,23 @@ impl Client {
         Ok(files_archived)
     }
 
+    /// Uploads a single file to Paperless-ngx.
+    ///
+    /// This method creates a multipart form containing the file and its title
+    /// (derived from the filename), then posts it to the configured Paperless-ngx
+    /// endpoint. The upload is considered successful only if the server responds
+    /// with HTTP 200 OK.
+    ///
+    /// # Arguments
+    ///
+    /// * `file` - Path to the file to upload
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - The multipart form cannot be created
+    /// - The HTTP request fails (network error, authentication failure)
+    /// - The server returns a non-200 status code
     fn upload_file(&self, file: &PathBuf) -> Result<(), Box<dyn Error>> {
         debug!("Called: Client::upload_file");
 
