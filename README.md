@@ -1,7 +1,7 @@
 # Paperless-ngx Uploader
 
 ![Build Status](https://github.com/oliverziegert/paperless-ngx-uploader/workflows/test/badge.svg)
-![Version](https://img.shields.io/badge/version-0.1.17-blue.svg)
+![Version](https://img.shields.io/github/v/release/oliverziegert/paperless-ngx-uploader)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue.svg)
 
 A secure Rust CLI tool for uploading documents to your Paperless-ngx instance. Features batch uploads, file filtering, automatic archiving, and secure credential storage.
