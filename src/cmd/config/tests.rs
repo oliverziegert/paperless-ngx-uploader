@@ -170,6 +170,68 @@ mod public_config_tests {
         // Verify data is preserved
         assert_eq!(loaded_config.endpoint, original_endpoint);
     }
+
+    #[test]
+    fn test_allow_insecure_true_roundtrip() {
+        setup_logger();
+
+        let temp_dir = TempDir::new().unwrap();
+        let config_path = temp_dir.path().join("config.yaml");
+
+        // Create and save config with allow_insecure set to true
+        let config = PublicConfig {
+            endpoint: "http://insecure-test.example.com".to_string(),
+            allow_insecure: true,
+            path: config_path.clone(),
+        };
+        config.save().unwrap();
+
+        // Verify the file was created
+        assert!(config_path.exists());
+
+        // Load it back
+        let mut loaded_config = PublicConfig {
+            endpoint: String::new(),
+            allow_insecure: false,
+            path: config_path.clone(),
+        };
+        loaded_config.load().unwrap();
+
+        // Verify allow_insecure is preserved as true
+        assert_eq!(loaded_config.endpoint, "http://insecure-test.example.com");
+        assert!(loaded_config.allow_insecure, "allow_insecure should be true after loading");
+    }
+
+    #[test]
+    fn test_allow_insecure_false_roundtrip() {
+        setup_logger();
+
+        let temp_dir = TempDir::new().unwrap();
+        let config_path = temp_dir.path().join("config.yaml");
+
+        // Create and save config with allow_insecure set to false
+        let config = PublicConfig {
+            endpoint: "https://secure-test.example.com".to_string(),
+            allow_insecure: false,
+            path: config_path.clone(),
+        };
+        config.save().unwrap();
+
+        // Verify the file was created
+        assert!(config_path.exists());
+
+        // Load it back with different initial value to ensure it's overwritten
+        let mut loaded_config = PublicConfig {
+            endpoint: String::new(),
+            allow_insecure: true,
+            path: config_path.clone(),
+        };
+        loaded_config.load().unwrap();
+
+        // Verify allow_insecure is preserved as false
+        assert_eq!(loaded_config.endpoint, "https://secure-test.example.com");
+        assert!(!loaded_config.allow_insecure, "allow_insecure should be false after loading");
+    }
 }
 
 #[cfg(test)]
@@ -396,5 +458,50 @@ mod config_integration_tests {
         };
         let load_result = test_private.load();
         assert!(load_result.is_err());
+    }
+
+    /// Test config with allow_insecure field set to true.
+    ///
+    /// Note: This test is ignored by default because the mock credential store in keyring v3.6.2
+    /// doesn't persist data between different Entry::new() calls. Each Entry instance has isolated
+    /// MockData. This test works correctly with real OS keyring backends.
+    ///
+    /// To run this test with real keyring: `cargo test test_config_with_allow_insecure -- --ignored`
+    #[test]
+    #[ignore]
+    fn test_config_with_allow_insecure() {
+        setup_logger();
+
+        let temp_dir = TempDir::new().unwrap();
+        let config_path = temp_dir.path().join("config.yaml");
+
+        // Create a config with allow_insecure set to true
+        let config = Config {
+            public_config: PublicConfig {
+                endpoint: "http://insecure-integration.example.com".to_string(),
+                allow_insecure: true,
+                path: config_path.clone(),
+            },
+            private_config: PrivateConfig {
+                token: "insecure_integration_token".to_string(),
+            },
+        };
+
+        // Save the config (both file and mock keyring)
+        config.save().unwrap();
+
+        // Verify public config file was created
+        assert!(config_path.exists());
+
+        // Load config back
+        let loaded = Config::load(Some(&config_path)).unwrap();
+
+        // Verify all fields including allow_insecure
+        assert_eq!(loaded.public_config.endpoint, "http://insecure-integration.example.com");
+        assert!(loaded.public_config.allow_insecure, "allow_insecure should be true after loading");
+        assert_eq!(loaded.private_config.token, "insecure_integration_token");
+
+        // Cleanup
+        loaded.delete().unwrap();
     }
 }
