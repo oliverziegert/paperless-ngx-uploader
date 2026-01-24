@@ -1020,6 +1020,7 @@ dependencies = [
  "serde",
  "tempfile",
  "thiserror",
+ "url",
 ]
 
 [[package]]
