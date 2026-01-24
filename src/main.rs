@@ -96,7 +96,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             archive,
             period,
             delete,
-            allow_insecure: _allow_insecure,
+            allow_insecure,
         } => {
             // For upload, load existing config (must exist)
             let cfg = match Config::load(cli.config.as_ref()) {
@@ -107,7 +107,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 },
             };
 
-            upload(file, folder, filter, archive, period, delete, cfg)
+            upload(file, folder, filter, archive, period, delete, allow_insecure, cfg)
         },
     }
 }
@@ -168,8 +168,22 @@ pub fn upload(file: Option<PathBuf>,
               archive: bool,
               period: usize,
               delete: bool,
+              allow_insecure: bool,
               cfg: Config) -> Result<(), Box<dyn Error>> {
     debug!("Called: upload");
+
+    // Validate endpoint security
+    // CLI --allow-insecure overrides config.allow_insecure
+    if let Err(e) = validate_endpoint_security(&cfg.public_config.endpoint) {
+        if allow_insecure || cfg.public_config.allow_insecure {
+            warn!("⚠️  Security Warning: {}", e);
+            warn!("Proceeding with insecure connection as allowed by config or --allow-insecure flag.");
+        } else {
+            error!("{}", e);
+            return Err(e.into());
+        }
+    }
+
     let client = cmd::client::Client::new(cfg);
     client.upload(file, folder, filter, archive, period, delete)
 }
