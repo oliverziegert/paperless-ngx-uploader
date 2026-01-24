@@ -63,6 +63,10 @@ enum Commands {
         /// Delete the uploaded files
         #[arg(long)]
         delete: bool,
+
+        /// Allow insecure HTTP connections (not recommended for production)
+        #[arg(long)]
+        allow_insecure: bool,
     },
 }
 
@@ -91,6 +95,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             archive,
             period,
             delete,
+            allow_insecure: _allow_insecure,
         } => {
             // For upload, load existing config (must exist)
             let cfg = match Config::load(cli.config.as_ref()) {
