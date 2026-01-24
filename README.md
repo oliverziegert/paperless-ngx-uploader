@@ -154,6 +154,208 @@ Use a different config file location:
 paperless-ngx-uploader --config /custom/path/config.yaml upload --file document.pdf
 ```
 
+## Advanced Usage - Automation
+
+For automated workflows, you'll need to ensure the uploader can run non-interactively without prompting for credentials.
+
+### Non-Interactive Setup
+
+Before setting up automation, initialize the configuration once interactively:
+
+```bash
+# Run this once to store credentials securely
+paperless-ngx-uploader init
+```
+
+This stores your token in the OS keyring, allowing the uploader to access it automatically in future runs.
+
+### Cron Jobs
+
+Schedule automatic uploads using cron. This example uploads files daily at 2 AM:
+
+```bash
+# Edit your crontab
+crontab -e
+
+# Add this line to upload daily at 2:00 AM
+0 2 * * * /path/to/paperless-ngx-uploader upload --folder /home/user/scans --archive --cleanup
+
+# Upload every 4 hours with regex filtering
+0 */4 * * * /path/to/paperless-ngx-uploader upload --folder /home/user/documents --regex ".*\.pdf$" --archive
+
+# Upload on weekdays at 9 AM with custom cleanup period
+0 9 * * 1-5 /path/to/paperless-ngx-uploader upload --folder /home/user/invoices --archive --cleanup --cleanup-after-days 7
+```
+
+**Tip:** Use absolute paths in cron jobs and redirect output to a log file for debugging:
+
+```bash
+0 2 * * * /usr/local/bin/paperless-ngx-uploader upload --folder /home/user/scans --archive >> /var/log/paperless-upload.log 2>&1
+```
+
+### Systemd Service and Timer
+
+For more control and better logging, use systemd. Create a service that runs on a timer:
+
+**Service file** (`~/.config/systemd/user/paperless-upload.service`):
+
+```ini
+[Unit]
+Description=Upload documents to Paperless-ngx
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/path/to/paperless-ngx-uploader upload --folder /home/user/scans --archive --cleanup
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target
+```
+
+**Timer file** (`~/.config/systemd/user/paperless-upload.timer`):
+
+```ini
+[Unit]
+Description=Run Paperless-ngx upload daily
+
+[Timer]
+# Run daily at 2:00 AM
+OnCalendar=daily
+OnCalendar=*-*-* 02:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+```
+
+**Enable and start the timer:**
+
+```bash
+# Reload systemd to recognize new files
+systemctl --user daemon-reload
+
+# Enable timer to start on boot
+systemctl --user enable paperless-upload.timer
+
+# Start the timer now
+systemctl --user start paperless-upload.timer
+
+# Check timer status
+systemctl --user status paperless-upload.timer
+
+# View logs
+journalctl --user -u paperless-upload.service -f
+```
+
+### Batch Processing Script
+
+For complex workflows, create a shell script that orchestrates multiple upload operations:
+
+**Example:** `upload-batch.sh`
+
+```bash
+#!/bin/bash
+
+# Exit on any error
+set -e
+
+# Configuration
+UPLOADER="/path/to/paperless-ngx-uploader"
+LOG_FILE="/var/log/paperless-batch-upload.log"
+
+# Function to log with timestamp
+log() {
+    echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
+}
+
+log "Starting batch upload process"
+
+# Upload invoices with 7-day cleanup
+log "Processing invoices..."
+$UPLOADER upload --folder /home/user/invoices --regex "invoice.*\.pdf" --archive --cleanup --cleanup-after-days 7
+
+# Upload receipts with 30-day cleanup
+log "Processing receipts..."
+$UPLOADER upload --folder /home/user/receipts --archive --cleanup --cleanup-after-days 30
+
+# Upload general documents with 60-day cleanup
+log "Processing general documents..."
+$UPLOADER upload --folder /home/user/documents --archive --cleanup --cleanup-after-days 60
+
+log "Batch upload completed successfully"
+```
+
+**Make executable and run:**
+
+```bash
+chmod +x upload-batch.sh
+./upload-batch.sh
+```
+
+### Watch Folder (Continuous Monitoring)
+
+Monitor a folder for new files and upload them immediately using `inotifywait` (Linux):
+
+```bash
+#!/bin/bash
+
+WATCH_DIR="/home/user/scan-inbox"
+UPLOADER="/path/to/paperless-ngx-uploader"
+
+# Install inotify-tools if needed: sudo apt-get install inotify-tools
+
+echo "Watching $WATCH_DIR for new files..."
+
+inotifywait -m -e close_write -e moved_to "$WATCH_DIR" --format '%w%f' | while read FILE
+do
+    echo "New file detected: $FILE"
+    $UPLOADER upload --file "$FILE" --archive
+done
+```
+
+**Run as systemd service** (`~/.config/systemd/user/paperless-watch.service`):
+
+```ini
+[Unit]
+Description=Watch folder for Paperless-ngx uploads
+After=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/path/to/watch-folder.sh
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target
+```
+
+### Docker Integration
+
+If running Paperless-ngx in Docker, you can mount a volume and use the uploader from the host:
+
+```bash
+# Upload to Paperless-ngx running in Docker
+paperless-ngx-uploader upload --folder /host/path/to/documents --archive
+
+# Or use Docker Compose to add a sidecar service (docker-compose.yml)
+```
+
+```yaml
+services:
+  paperless-upload:
+    image: rust:latest
+    volumes:
+      - ./paperless-ngx-uploader:/app
+      - /host/scans:/scans
+    command: /app/target/release/paperless-ngx-uploader upload --folder /scans --archive --cleanup
+    environment:
+      - PAPERLESS_URL=http://paperless:8000
+```
+
 ## Troubleshooting
 
 ### "Token not configured" error
