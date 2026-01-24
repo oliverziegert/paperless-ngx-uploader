@@ -67,6 +67,28 @@ impl Client {
         Self { cfg, http: client }
     }
 
+    /// Uploads documents to Paperless-ngx with optional archival and cleanup.
+    ///
+    /// This method aggregates files from either a single file or a folder, filters
+    /// them by the provided regex pattern, uploads them to the Paperless-ngx endpoint,
+    /// and optionally archives uploaded files and deletes expired files.
+    ///
+    /// # Arguments
+    ///
+    /// * `file` - Optional path to a single file to upload
+    /// * `folder` - Optional path to a folder containing files to upload
+    /// * `filter` - Regex pattern to filter file names
+    /// * `archive` - If true, successfully uploaded files are archived
+    /// * `period` - Number of days after which files are considered expired (used with `delete`)
+    /// * `delete` - If true, files older than `period` days are deleted
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - File aggregation fails (invalid regex, folder not readable)
+    /// - File upload fails (network error, authentication failure, server error)
+    /// - Archival fails (unable to create archive folder, file move error)
+    /// - Deletion fails (unable to delete expired files)
     pub(crate) fn upload(
         &self,
         file: Option<PathBuf>,
