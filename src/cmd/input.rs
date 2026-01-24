@@ -4,7 +4,8 @@ use log::{debug, error, info};
 
 /// Prompts the user to enter a Paperless-ngx endpoint URL.
 ///
-/// Displays an interactive prompt with a placeholder example (http://localhost:8000).
+/// Displays an interactive prompt with a placeholder example (https://paperless.example.com)
+/// and a security warning recommending HTTPS for production use.
 /// Returns the user's input as a string.
 ///
 /// # Errors
@@ -12,7 +13,10 @@ use log::{debug, error, info};
 /// Returns an error if the user cancels the prompt or if input reading fails.
 pub fn get_endpoint_by_prompt() -> Result<String, Box<dyn Error>> {
     debug!("get_endpoint_by_prompt called");
-    let input = Text::new("Endpoint").with_placeholder("http://localhost:8000").prompt();
+    let input = Text::new("Endpoint")
+        .with_placeholder("https://paperless.example.com")
+        .with_help_message("Use HTTPS for secure connections. HTTP is only safe for localhost.")
+        .prompt();
     match input {
         Ok(input) => {
             info!("Endpoint entered: {}", input);
