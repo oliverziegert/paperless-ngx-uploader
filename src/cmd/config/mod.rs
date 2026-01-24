@@ -30,6 +30,7 @@ impl Default for PublicConfig {
         let config_dir = get_or_create_config_dir();
         Self {
             endpoint: "http://localhost:8000".into(),
+            allow_insecure: false,
             path: config_dir.join(CONFIG_FILE_NAME),
         }
     }
