@@ -14,6 +14,15 @@ A secure Rust CLI tool for uploading documents to your Paperless-ngx instance. F
 - 🧹 **Cleanup** - Automatically delete old archived files
 - 🔐 **Secure credentials** - Tokens stored in OS keyring, never in plaintext
 
+## Compatibility
+
+This tool uses the standard Paperless-ngx REST API and is compatible with:
+
+- **Paperless-ngx**: v1.10.0 and later
+- **API Version**: Stable document upload endpoint (`/api/documents/post_document/`)
+
+The uploader has been tested with recent Paperless-ngx versions and should work with any version that supports the standard document upload API. If you encounter compatibility issues with your Paperless-ngx version, please [open an issue](https://github.com/oliverziegert/paperless-ngx-uploader/issues).
+
 ## Installation
 
 ```bash
