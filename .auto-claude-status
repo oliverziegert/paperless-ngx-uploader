@@ -3,23 +3,23 @@
   "spec": "009-split-client-rs-to-separate-concerns-510-lines",
   "state": "building",
   "subtasks": {
-    "completed": 8,
+    "completed": 9,
     "total": 17,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Migrate HTTP Client",
+    "current": "Migrate Tests",
     "id": null,
-    "total": 3
+    "total": 1
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 10,
+    "number": 11,
     "started_at": "2026-01-25T14:13:41.345619"
   },
-  "last_update": "2026-01-25T14:37:32.913322"
+  "last_update": "2026-01-25T14:39:06.509544"
 }

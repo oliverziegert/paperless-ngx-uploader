@@ -13,7 +13,7 @@ const HEADER_AUTH_PREFIX: &str = "Token ";
 
 
 pub struct Client {
-    cfg: Config,
+    pub(super) cfg: Config,
     http: reqwest::blocking::Client,
 }
 
@@ -165,7 +165,7 @@ impl Client {
     /// - The multipart form cannot be created
     /// - The HTTP request fails (network error, authentication failure)
     /// - The server returns a non-200 status code
-    fn upload_file(&self, file: &PathBuf) -> Result<(), Box<dyn Error>> {
+    pub(super) fn upload_file(&self, file: &PathBuf) -> Result<(), Box<dyn Error>> {
         debug!("Called: Client::upload_file");
 
         let mut form = match multipart::Form::new().file("document", file) {
@@ -198,169 +198,5 @@ impl Client {
                 Err(format!("Error uploading file: {}", response.status()).into())
             }
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use super::super::helpers::MAX_TITLE_LENGTH;
-    use std::path::PathBuf;
-    use std::fs;
-    use log::LevelFilter::Debug;
-
-    fn setup_logger() {
-        let _ = env_logger::builder().filter_level(Debug).is_test(true).try_init();
-    }
-
-    #[test]
-    fn test_new_client_success() {
-        setup_logger();
-
-        // Create a test config
-        let mut cfg = Config::default();
-        cfg.private_config.token = "test_token".to_string();
-
-        // Create a new client
-        let client = Client::new(cfg).unwrap();
-
-        // Check that the client was created successfully
-        assert_eq!(client.cfg.private_config.token, "test_token");
-    }
-
-    #[test]
-    fn test_get_title_from_filename_no_extension() {
-        setup_logger();
-
-        let file = PathBuf::from("testfile");
-        let expected_title = "testfile";
-        assert_eq!(get_title_from_filename(&file), expected_title);
-    }
-
-    #[test]
-    fn test_get_title_from_filename_with_extension() {
-        setup_logger();
-
-        let file = PathBuf::from("testfile.txt");
-        let expected_title = "testfile";
-        assert_eq!(get_title_from_filename(&file), expected_title);
-    }
-
-    #[test]
-    fn test_get_title_from_filename_long_name() {
-        setup_logger();
-
-        let file = PathBuf::from("Lorem_ipsum_dolor_sit_amet_consectetur_adipiscing_elit_Sed_ut_lectus_sit_amet_nulla_sagittis_tristique.txt");
-        let expected_title = "Lorem_ipsum_dolor_sit_amet_consectetur_adipiscing_elit_Sed_ut_lectus_sit_amet_nulla_sagittis_tristique".split_at(MAX_TITLE_LENGTH).0;
-        assert_eq!(get_title_from_filename(&file), expected_title);
-    }
-
-    #[test]
-    fn test_get_title_from_filename_non_ascii() {
-        setup_logger();
-
-        let file = PathBuf::from("testfile_é.txt");
-        let expected_title = "testfile_é";
-        assert_eq!(get_title_from_filename(&file), expected_title);
-    }
-
-    #[test]
-    fn test_get_title_from_filename_special_chars() {
-        setup_logger();
-
-        let file = PathBuf::from("testfile!@#$%^&*().txt");
-        let expected_title = "testfile!@#$%^&*()";
-        assert_eq!(get_title_from_filename(&file), expected_title);
-    }
-
-    #[test]
-    fn test_upload_file_success() {
-        setup_logger();
-
-        let mut _s = mockito::Server::new();
-        let _m = _s.mock("POST", "/api/endpoint")
-            .match_header("Authorization", "Token token")
-            .with_status(http::StatusCode::OK.as_u16() as usize)
-            .create();
-
-        let mut cfg = Config::default();
-        cfg.private_config.token = "token".to_string();
-        cfg.public_config.endpoint = format!("{}/api/endpoint", _s.url());
-        let client = Client::new(cfg).unwrap();
-
-        let file_path = PathBuf::from("test_file.txt");
-        fs::File::create(&file_path).unwrap();
-
-        assert!(client.upload_file(&file_path).is_ok());
-        _m.assert();
-
-        // Delete the test file if possible
-        // Ignore any errors
-        let _ = fs::remove_file(file_path);
-    }
-
-    #[test]
-    fn test_upload_file_error_creating_form() {
-        setup_logger();
-
-        let cfg = Config::default();
-        let client = Client::new(cfg).unwrap();
-
-        let file_path = PathBuf::from("non_existent_file.txt");
-
-        assert!(client.upload_file(&file_path).is_err());
-    }
-
-    #[test]
-    fn test_upload_file_error_sending_request() {
-        setup_logger();
-
-        let mut _s = mockito::Server::new();
-        let _m = _s.mock("POST", "/api/endpoint")
-            .match_header("Authorization", "Token token")
-            .with_status(http::StatusCode::INTERNAL_SERVER_ERROR.as_u16() as usize)
-            .create();
-
-        let mut cfg = Config::default();
-        cfg.private_config.token = "token".to_string();
-        cfg.public_config.endpoint = format!("{}/api/endpoint", _s.url());
-        let client = Client::new(cfg).unwrap();
-
-        let file_path = PathBuf::from("test_file.txt");
-        fs::File::create(&file_path).unwrap();
-
-        assert!(client.upload_file(&file_path).is_err());
-        _m.assert();
-
-        // Delete the test file if possible
-        // Ignore any errors
-        let _ = fs::remove_file(file_path);
-    }
-
-    #[test]
-    fn test_upload_file_non_ok_status() {
-        setup_logger();
-
-        let mut _s = mockito::Server::new();
-        let _m = _s.mock("POST", "/api/endpoint")
-            .match_header("Authorization", "Token token")
-            .with_status(http::StatusCode::BAD_REQUEST.as_u16() as usize)
-            .create();
-
-        let mut cfg = Config::default();
-        cfg.private_config.token = "token".to_string();
-        cfg.public_config.endpoint = format!("{}/api/endpoint", _s.url());
-        let client = Client::new(cfg).unwrap();
-
-
-        let file_path = PathBuf::from("test_file.txt");
-        fs::File::create(&file_path).unwrap();
-
-        assert!(client.upload_file(&file_path).is_err());
-        _m.assert();
-
-        // Delete the test file if possible
-        // Ignore any errors
-        let _ = fs::remove_file(file_path);
     }
 }
