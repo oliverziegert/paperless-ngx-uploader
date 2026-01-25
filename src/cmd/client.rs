@@ -37,7 +37,8 @@ impl Client {
         debug!("HeaderMap created");
 
         let header_auth_value = format!("{}{}", HEADER_AUTH_PREFIX, cfg.private_config.token);
-        let mut header_auth_value = header::HeaderValue::from_str(header_auth_value.as_str()).unwrap();
+        let mut header_auth_value = header::HeaderValue::from_str(header_auth_value.as_str())
+            .map_err(|_| CmdError::ClientCreationFailed)?;
         header_auth_value.set_sensitive(true);
         header.insert(header::AUTHORIZATION, header_auth_value);
         debug!("Authorization header set");
