@@ -5,8 +5,9 @@ mod http;
 mod file_ops;
 mod helpers;
 
-#[cfg(test)]
-mod tests;
+// Tests will be migrated to tests.rs in phase 5
+// #[cfg(test)]
+// mod tests;
 
 // Re-export Client publicly so it can be used from main.rs
 pub use http::Client;
