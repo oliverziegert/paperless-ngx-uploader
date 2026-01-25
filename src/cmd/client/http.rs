@@ -2,18 +2,16 @@ use crate::cmd::config::Config;
 use crate::cmd::models::CmdError;
 use http::header;
 use log::{debug, error, info};
-use regex::Regex;
 use reqwest::blocking::multipart;
 use std::error::Error;
 use std::fs;
 use std::path::PathBuf;
 use std::time::SystemTime;
 
-use super::file_ops::aggregate_files;
+use super::file_ops::{aggregate_files, archive_files, ARCHIVE_FOLDER_NAME};
 use super::helpers::get_title_from_filename;
 
 const HEADER_AUTH_PREFIX: &str = "Token ";
-const ARCHIVE_FOLDER_NAME: &str = "archive";
 const SECS_PER_DAY: u64 = 60 * 60 * 24;
 
 
@@ -205,68 +203,6 @@ impl Client {
         }
     }
 }
-
-/// Archives a list of files based on the provided period.
-///
-/// This function iterates over the provided files and archives each one
-/// if its age exceeds the specified period in days.
-///
-/// # Arguments
-///
-/// * `files` - A reference to a vector of `PathBuf` representing the files to be archived.
-/// * `period` - The period in days beyond which files should be archived.
-///
-/// # Errors
-///
-/// Returns an error if any file operation fails during the archiving process.
-fn archive_files(files: &[PathBuf]) -> Result<(), Box<dyn Error>> {
-    debug!("Starting archive_files");
-    for file in files {
-        debug!("Attempting to archive file: {:?}", file);
-        match archive_file(file) {
-            Ok(_) => debug!("File archived successfully: {:?}", file),
-            Err(e) => error!("Error archiving file {:?}: {}", file, e),
-        }
-    }
-    debug!("Completed archive_files");
-    Ok(())
-}
-
-
-/// Archives a single file if it is older than the specified period in days.
-///
-/// The function first checks if the file's creation date is in the future,
-/// and if so, skips the file. Otherwise, it calculates the number of days
-/// since the file was created and checks if it exceeds the specified period.
-/// If it does, the file is moved to the "archive" folder in the same parent
-/// directory.
-///
-/// # Arguments
-///
-/// * `file` - The file to be archived.
-/// * `period` - The period in days beyond which files should be archived.
-///
-/// # Errors
-///
-/// Returns an error if any file operation fails during the archiving process.
-fn archive_file(file: &PathBuf) -> Result<(), Box<dyn Error>> {
-    debug!("Called: Client::archive_file");
-    let parent = file.parent()
-        .ok_or_else(|| CmdError::InvalidFilePath(file.display().to_string()))?;
-    let archive_folder = parent.join(ARCHIVE_FOLDER_NAME);
-    debug!("Creating archive folder: {}", archive_folder.display());
-    fs::create_dir_all(&archive_folder)?;
-    let file_name = file.file_name()
-        .ok_or_else(|| CmdError::InvalidFilePath(file.display().to_string()))?;
-    let target_path = archive_folder.join(file_name);
-    debug!("Moving file {} to {}", file.display(), target_path.display());
-
-    // Move the file to the archive folder
-    fs::rename(file, &target_path)?;
-    info!("File {} moved to archive folder", file.display());
-    Ok(())
-}
-
 
 /// Deletes files that are older than a specified period.
 ///
