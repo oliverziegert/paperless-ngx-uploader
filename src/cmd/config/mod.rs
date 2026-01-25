@@ -19,12 +19,12 @@ const CONFIG_FILE_NAME: &str = "config.yaml";
 
 impl Default for PublicConfig {
     fn default() -> Self {
-        let config_dir = get_or_create_config_dir()
-            .expect("Failed to get or create config directory");
+        // Don't create directories in Default - error handling is done in Config::load()
+        // This allows Default to be infallible as required by the trait
         Self {
             endpoint: "http://localhost:8000".into(),
             allow_insecure: false,
-            path: config_dir.join(CONFIG_FILE_NAME),
+            path: PathBuf::new(), // Empty path - will be set in Config::load()
         }
     }
 }
@@ -106,6 +106,10 @@ impl Config {
         // Set the config file path (use provided path or default)
         if let Some(path) = config_path {
             config.public_config.path = path.clone();
+        } else {
+            // No custom path provided - use default config directory
+            let config_dir = get_or_create_config_dir()?;
+            config.public_config.path = config_dir.join(CONFIG_FILE_NAME);
         }
 
         debug!("Loading public config from: {}", config.public_config.path.display());
