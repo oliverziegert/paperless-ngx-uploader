@@ -185,7 +185,13 @@ pub fn upload(file: Option<PathBuf>,
         }
     }
 
-    let client = cmd::client::Client::new(cfg);
+    let client = match cmd::client::Client::new(cfg) {
+        Ok(client) => client,
+        Err(e) => {
+            error!("Error creating client: {}", e);
+            return Err(e.into());
+        }
+    };
     client.upload(file, folder, filter, archive, period, delete)
 }
 

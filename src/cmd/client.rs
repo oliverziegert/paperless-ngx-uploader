@@ -1,4 +1,5 @@
 use crate::cmd::config::Config;
+use crate::cmd::models::CmdError;
 use http::header;
 use log::{debug, error, info};
 use regex::Regex;
@@ -28,16 +29,16 @@ impl Client {
     ///
     /// # Errors
     ///
-    /// If an error occurs while creating the `reqwest::blocking::Client`, this
-    /// function will panic.
-    pub(crate) fn new(cfg: Config) -> Self {
+    /// Returns `Err(CmdError::ClientCreationFailed)` if the HTTP client cannot be created.
+    pub(crate) fn new(cfg: Config) -> Result<Self, CmdError> {
         debug!("Creating new Client with provided Config");
 
         let mut header = header::HeaderMap::new();
         debug!("HeaderMap created");
 
         let header_auth_value = format!("{}{}", HEADER_AUTH_PREFIX, cfg.private_config.token);
-        let mut header_auth_value = header::HeaderValue::from_str(header_auth_value.as_str()).unwrap();
+        let mut header_auth_value = header::HeaderValue::from_str(header_auth_value.as_str())
+            .map_err(|_| CmdError::ClientCreationFailed)?;
         header_auth_value.set_sensitive(true);
         header.insert(header::AUTHORIZATION, header_auth_value);
         debug!("Authorization header set");
@@ -50,21 +51,11 @@ impl Client {
 
         let client = reqwest::blocking::Client::builder()
             .default_headers(header)
-            .build();
-        debug!("HTTP Client builder initialized");
+            .build()
+            .map_err(|_| CmdError::ClientCreationFailed)?;
+        debug!("HTTP Client created successfully");
 
-        let client = match client {
-            Ok(client) => {
-                debug!("HTTP Client created successfully");
-                client
-            }
-            Err(e) => {
-                error!("Error creating client: {}", e);
-                panic!("Error creating client: {}", e);
-            }
-        };
-
-        Self { cfg, http: client }
+        Ok(Self { cfg, http: client })
     }
 
     /// Uploads documents to Paperless-ngx with optional archival and cleanup.
@@ -234,15 +225,23 @@ fn aggregate_files(
         let entries = fs::read_dir(folder_path)?;
         for entry in entries {
             let entry_path = entry?.path();
-            if regex.is_match(entry_path.file_name().unwrap().to_str().unwrap()) {
-                paths.push(entry_path);
+            if let Some(file_name) = entry_path.file_name() {
+                if let Some(file_name_str) = file_name.to_str() {
+                    if regex.is_match(file_name_str) {
+                        paths.push(entry_path);
+                    }
+                }
             }
         }
     }
 
     if let Some(file_path) = file {
-        if regex.is_match(file_path.file_name().unwrap().to_str().unwrap()) {
-            paths.push(file_path);
+        if let Some(file_name) = file_path.file_name() {
+            if let Some(file_name_str) = file_name.to_str() {
+                if regex.is_match(file_name_str) {
+                    paths.push(file_path);
+                }
+            }
         }
     }
 
@@ -294,10 +293,13 @@ fn archive_files(files: &[PathBuf]) -> Result<(), Box<dyn Error>> {
 /// Returns an error if any file operation fails during the archiving process.
 fn archive_file(file: &PathBuf) -> Result<(), Box<dyn Error>> {
     debug!("Called: Client::archive_file");
-    let archive_folder = file.parent().unwrap().join(ARCHIVE_FOLDER_NAME);
+    let parent = file.parent()
+        .ok_or_else(|| CmdError::InvalidFilePath(file.display().to_string()))?;
+    let archive_folder = parent.join(ARCHIVE_FOLDER_NAME);
     debug!("Creating archive folder: {}", archive_folder.display());
     fs::create_dir_all(&archive_folder)?;
-    let file_name = file.file_name().unwrap();
+    let file_name = file.file_name()
+        .ok_or_else(|| CmdError::InvalidFilePath(file.display().to_string()))?;
     let target_path = archive_folder.join(file_name);
     debug!("Moving file {} to {}", file.display(), target_path.display());
 
@@ -326,7 +328,9 @@ fn delete_expired_files(files: &[PathBuf], period: usize) -> Result<(), Box<dyn 
     // Iterate over each file in the list
     for file in files.iter() {
         debug!("Attempting to delete archived files for: {}", file.display());
-        let archive_folder = file.parent().unwrap().join(ARCHIVE_FOLDER_NAME);
+        let parent = file.parent()
+            .ok_or_else(|| CmdError::InvalidFilePath(file.display().to_string()))?;
+        let archive_folder = parent.join(ARCHIVE_FOLDER_NAME);
         if !archive_folder.is_dir() {
             debug!("Archive folder does not exist: {}", archive_folder.display());
             continue;
@@ -388,11 +392,11 @@ fn delete_expired_file(file: &PathBuf, period: usize) -> Result<(), Box<dyn Erro
 /// `MAX_TITLE_LENGTH`. This is used as the title when uploading the file to Paperless-ngx.
 fn get_title_from_filename(file: &std::path::Path) -> String {
     let file_name = match file.file_name() {
-        Some(name) => name.to_str().unwrap(),
+        Some(name) => name.to_str().unwrap_or(""),
         None => "",
     };
     let extension = match file.extension() {
-        Some(ext) => format!(".{}", ext.to_str().unwrap()),
+        Some(ext) => format!(".{}", ext.to_str().unwrap_or("")),
         None => "".to_string(),
     };
     let name = file_name.replace(extension.as_str(), "");
@@ -424,7 +428,7 @@ mod tests {
         cfg.private_config.token = "test_token".to_string();
 
         // Create a new client
-        let client = Client::new(cfg);
+        let client = Client::new(cfg).unwrap();
 
         // Check that the client was created successfully
         assert_eq!(client.cfg.private_config.token, "test_token");
@@ -488,7 +492,7 @@ mod tests {
         let mut cfg = Config::default();
         cfg.private_config.token = "token".to_string();
         cfg.public_config.endpoint = format!("{}/api/endpoint", _s.url());
-        let client = Client::new(cfg);
+        let client = Client::new(cfg).unwrap();
 
         let file_path = PathBuf::from("test_file.txt");
         fs::File::create(&file_path).unwrap();
@@ -506,7 +510,7 @@ mod tests {
         setup_logger();
 
         let cfg = Config::default();
-        let client = Client::new(cfg);
+        let client = Client::new(cfg).unwrap();
 
         let file_path = PathBuf::from("non_existent_file.txt");
 
@@ -526,7 +530,7 @@ mod tests {
         let mut cfg = Config::default();
         cfg.private_config.token = "token".to_string();
         cfg.public_config.endpoint = format!("{}/api/endpoint", _s.url());
-        let client = Client::new(cfg);
+        let client = Client::new(cfg).unwrap();
 
         let file_path = PathBuf::from("test_file.txt");
         fs::File::create(&file_path).unwrap();
@@ -552,7 +556,7 @@ mod tests {
         let mut cfg = Config::default();
         cfg.private_config.token = "token".to_string();
         cfg.public_config.endpoint = format!("{}/api/endpoint", _s.url());
-        let client = Client::new(cfg);
+        let client = Client::new(cfg).unwrap();
 
 
         let file_path = PathBuf::from("test_file.txt");

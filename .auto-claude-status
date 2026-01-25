@@ -1,25 +1,25 @@
 {
   "active": true,
-  "spec": "003-add-https-enforcement-for-paperless-ngx-endpoint-u",
+  "spec": "010-replace-panic-calls-with-proper-error-handling",
   "state": "building",
   "subtasks": {
-    "completed": 6,
+    "completed": 11,
     "total": 12,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Integrate Validation into Workflow",
+    "current": "Verification and Cleanup",
     "id": null,
-    "total": 3
+    "total": 4
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 4,
-    "started_at": "2026-01-24T23:38:53.883053"
+    "number": 8,
+    "started_at": "2026-01-25T12:11:26.038072"
   },
-  "last_update": "2026-01-24T23:42:58.582947"
+  "last_update": "2026-01-25T12:21:41.744161"
 }

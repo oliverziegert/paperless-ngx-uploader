@@ -31,4 +31,16 @@ pub enum CmdError {
 
     #[error("Insecure HTTP connection to {0}. Use HTTPS for secure connections, or pass --allow-insecure to allow HTTP (not recommended for remote servers).")]
     InsecureConnection(String),
+
+    #[error("Failed to create HTTP client")]
+    ClientCreationFailed,
+
+    #[error("Failed to create config directory at {0}")]
+    ConfigDirCreationFailed(String),
+
+    #[error("Unsupported platform (no config dir found). Only Linux, MacOS and Windows are supported.")]
+    UnsupportedPlatform,
+
+    #[error("Invalid file path: {0}")]
+    InvalidFilePath(String),
 }

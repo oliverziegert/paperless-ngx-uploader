@@ -19,7 +19,8 @@ const CONFIG_FILE_NAME: &str = "config.yaml";
 
 impl Default for PublicConfig {
     fn default() -> Self {
-        let config_dir = get_or_create_config_dir();
+        let config_dir = get_or_create_config_dir()
+            .expect("Failed to get or create config directory");
         Self {
             endpoint: "http://localhost:8000".into(),
             allow_insecure: false,
@@ -64,21 +65,18 @@ pub trait HandleConfig {
     fn delete(&self) -> Result<(), CmdError>;
 }
 
-fn get_or_create_config_dir() -> PathBuf {
-    if let Some(config_dir) = dirs::config_dir() {
-        let config_dir = config_dir.join(APP_NAME);
-        if !config_dir.exists() {
-            std::fs::create_dir_all(&config_dir).unwrap_or_else(|_| {
-                panic!(
-                    "Failed to write to config dir {config_dir}",
-                    config_dir = config_dir.display()
-                )
-            });
-        }
-        config_dir
-    } else {
-        panic!("Unsupported platform (no config dir found). Only Linux, MacOS and Windows are supported.");
+fn get_or_create_config_dir() -> Result<PathBuf, CmdError> {
+    let config_dir = dirs::config_dir()
+        .ok_or(CmdError::UnsupportedPlatform)?;
+
+    let config_dir = config_dir.join(APP_NAME);
+
+    if !config_dir.exists() {
+        std::fs::create_dir_all(&config_dir)
+            .map_err(|_| CmdError::ConfigDirCreationFailed(config_dir.display().to_string()))?;
     }
+
+    Ok(config_dir)
 }
 
 impl Config {
