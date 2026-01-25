@@ -392,11 +392,11 @@ fn delete_expired_file(file: &PathBuf, period: usize) -> Result<(), Box<dyn Erro
 /// `MAX_TITLE_LENGTH`. This is used as the title when uploading the file to Paperless-ngx.
 fn get_title_from_filename(file: &std::path::Path) -> String {
     let file_name = match file.file_name() {
-        Some(name) => name.to_str().unwrap(),
+        Some(name) => name.to_str().unwrap_or(""),
         None => "",
     };
     let extension = match file.extension() {
-        Some(ext) => format!(".{}", ext.to_str().unwrap()),
+        Some(ext) => format!(".{}", ext.to_str().unwrap_or("")),
         None => "".to_string(),
     };
     let name = file_name.replace(extension.as_str(), "");
