@@ -225,15 +225,23 @@ fn aggregate_files(
         let entries = fs::read_dir(folder_path)?;
         for entry in entries {
             let entry_path = entry?.path();
-            if regex.is_match(entry_path.file_name().unwrap().to_str().unwrap()) {
-                paths.push(entry_path);
+            if let Some(file_name) = entry_path.file_name() {
+                if let Some(file_name_str) = file_name.to_str() {
+                    if regex.is_match(file_name_str) {
+                        paths.push(entry_path);
+                    }
+                }
             }
         }
     }
 
     if let Some(file_path) = file {
-        if regex.is_match(file_path.file_name().unwrap().to_str().unwrap()) {
-            paths.push(file_path);
+        if let Some(file_name) = file_path.file_name() {
+            if let Some(file_name_str) = file_name.to_str() {
+                if regex.is_match(file_name_str) {
+                    paths.push(file_path);
+                }
+            }
         }
     }
 
