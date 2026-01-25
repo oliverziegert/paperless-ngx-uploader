@@ -17,6 +17,7 @@ regex = "1.12.2"
 reqwest = { version = "0.13.0", features = ["blocking", "multipart", "rustls", "http2", "system-proxy", "charset"], default-features = false }
 serde = { version = "1.0.228", features = ["derive"] }
 thiserror = { version = "2.0.17"}
+tokio = { version = "1.48", features = ["full"] }
 url = "2.5"
 
 [dev-dependencies]

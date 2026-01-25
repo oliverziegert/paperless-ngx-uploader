@@ -1,25 +1,25 @@
 {
   "active": true,
-  "spec": "009-split-client-rs-to-separate-concerns-510-lines",
-  "state": "building",
+  "spec": "011-implement-parallel-file-uploads-using-async-runtim",
+  "state": "planning",
   "subtasks": {
-    "completed": 15,
-    "total": 17,
+    "completed": 0,
+    "total": 0,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Cleanup",
+    "current": "Update Dependencies",
     "id": null,
-    "total": 3
+    "total": 1
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 36,
-    "started_at": "2026-01-25T14:13:41.345619"
+    "number": 2,
+    "started_at": "2026-01-25T15:26:55.988452"
   },
-  "last_update": "2026-01-25T15:06:22.376890"
+  "last_update": "2026-01-25T15:30:20.785778"
 }
