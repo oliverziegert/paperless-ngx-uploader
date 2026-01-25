@@ -2,8 +2,9 @@ use crate::cmd::config::Config;
 use crate::cmd::models::CmdError;
 use http::header;
 use log::{debug, error, info};
-use reqwest::blocking::multipart;
+use reqwest::multipart;
 use std::error::Error;
+use std::fs;
 use std::path::PathBuf;
 
 use super::file_ops::{aggregate_files, archive_files, delete_expired_files};
@@ -14,13 +15,13 @@ const HEADER_AUTH_PREFIX: &str = "Token ";
 
 pub struct Client {
     pub(super) cfg: Config,
-    http: reqwest::blocking::Client,
+    http: reqwest::Client,
 }
 
 impl Client {
     /// Creates a new `Client` with the given `Config`.
     ///
-    /// The `Config` is used to create a `reqwest::blocking::Client` with the
+    /// The `Config` is used to create a `reqwest::Client` with the
     /// `Authorization` header set to the token configured in the `Config`.
     ///
     /// # Errors
@@ -45,7 +46,7 @@ impl Client {
         );
         debug!("Accept header set");
 
-        let client = reqwest::blocking::Client::builder()
+        let client = reqwest::Client::builder()
             .default_headers(header)
             .build()
             .map_err(|_| CmdError::ClientCreationFailed)?;
@@ -76,7 +77,7 @@ impl Client {
     /// - File upload fails (network error, authentication failure, server error)
     /// - Archival fails (unable to create archive folder, file move error)
     /// - Deletion fails (unable to delete expired files)
-    pub fn upload(
+    pub async fn upload(
         &self,
         file: Option<PathBuf>,
         folder: Option<PathBuf>,
@@ -93,7 +94,7 @@ impl Client {
             return Ok(());
         }
 
-        let files_to_archive = match self.upload_files(files) {
+        let files_to_archive = match self.upload_files(files).await {
             Ok(files) => files,
             Err(e) => {
                 error!("Error uploading files: {}", e);
@@ -112,12 +113,12 @@ impl Client {
         Ok(())
     }
 
-    /// Uploads a list of files to Paperless-ngx.
+    /// Uploads a list of files to Paperless-ngx in parallel.
     ///
-    /// This method iterates through the provided files and attempts to upload
-    /// each one. Successfully uploaded files are collected and returned. If an
-    /// individual file upload fails, the error is logged and the method continues
-    /// with the remaining files.
+    /// This method spawns concurrent tasks to upload files in parallel using
+    /// tokio::spawn and JoinSet. Successfully uploaded files are collected and
+    /// returned. If an individual file upload fails, the error is logged and
+    /// the method continues with the remaining files.
     ///
     /// # Arguments
     ///
@@ -131,56 +132,89 @@ impl Client {
     ///
     /// This method does not return errors. Individual file upload failures are
     /// logged but do not stop the upload process.
-    fn upload_files(&self, files: &[PathBuf]) -> Result<Vec<PathBuf>, Box<dyn Error>> {
+    pub(super) async fn upload_files(&self, files: &[PathBuf]) -> Result<Vec<PathBuf>, Box<dyn Error>> {
         debug!("Called: Client::upload_files");
-        let mut files_archived: Vec<PathBuf> = Vec::new();
+        use tokio::task::JoinSet;
+        use tokio::sync::Semaphore;
+        use std::sync::Arc;
+
+        const MAX_CONCURRENT_UPLOADS: usize = 10;
+
+        let semaphore = Arc::new(Semaphore::new(MAX_CONCURRENT_UPLOADS));
+        let mut set = JoinSet::new();
+
+        // Spawn a task for each file upload
         for file in files.iter() {
-            match self.upload_file(file) {
-                Ok(_) => {
+            let file = file.clone();
+            let http_client = self.http.clone();
+            let endpoint = self.cfg.public_config.endpoint.clone();
+            let permit = semaphore.clone().acquire_owned().await.unwrap();
+
+            set.spawn(async move {
+                let result = Self::upload_file_task(http_client, endpoint, &file).await;
+                drop(permit);  // Release semaphore permit when upload completes
+                (file, result)
+            });
+        }
+
+        // Collect results from all tasks
+        let mut files_archived: Vec<PathBuf> = Vec::new();
+        while let Some(result) = set.join_next().await {
+            match result {
+                Ok((file, Ok(_))) => {
                     debug!("File uploaded successfully");
-                    files_archived.push(file.clone())
+                    files_archived.push(file);
+                }
+                Ok((file, Err(e))) => {
+                    error!("Error uploading file {:?}: {}", file, e);
                 }
                 Err(e) => {
-                    error!("Error uploading file: {}", e);
+                    error!("Task join error: {}", e);
                 }
             }
         }
+
         Ok(files_archived)
     }
 
-    /// Uploads a single file to Paperless-ngx.
+    /// Helper method to upload a single file within a spawned task.
     ///
-    /// This method creates a multipart form containing the file and its title
-    /// (derived from the filename), then posts it to the configured Paperless-ngx
-    /// endpoint. The upload is considered successful only if the server responds
-    /// with HTTP 200 OK.
-    ///
-    /// # Arguments
-    ///
-    /// * `file` - Path to the file to upload
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if:
-    /// - The multipart form cannot be created
-    /// - The HTTP request fails (network error, authentication failure)
-    /// - The server returns a non-200 status code
-    pub(super) fn upload_file(&self, file: &PathBuf) -> Result<(), Box<dyn Error>> {
-        debug!("Called: Client::upload_file");
+    /// This is a static method that can be called from spawned tasks without
+    /// borrowing self. It performs the same upload logic as upload_file but
+    /// takes owned parameters.
+    async fn upload_file_task(
+        http_client: reqwest::Client,
+        endpoint: String,
+        file: &PathBuf,
+    ) -> Result<(), Box<dyn Error + Send + Sync>> {
+        debug!("Called: Client::upload_file_task");
 
-        let mut form = match multipart::Form::new().file("document", file) {
-            Ok(form) => form,
+        // Read file content synchronously
+        let file_content = match fs::read(file) {
+            Ok(content) => content,
             Err(e) => {
-                error!("Error creating multipart form: {}", e);
+                error!("Error reading file: {}", e);
                 return Err(e.into());
             }
         };
 
         let title = get_title_from_filename(file);
-        form = form.text("title", title.clone());
+
+        // Create multipart form with file content
+        let file_name = file.file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("document");
+
+        let part = multipart::Part::bytes(file_content)
+            .file_name(file_name.to_string());
+
+        let form = multipart::Form::new()
+            .part("document", part)
+            .text("title", title.clone());
+
         debug!("file_name: {}", &title);
 
-        let response = match self.http.post(&self.cfg.public_config.endpoint).multipart(form).send() {
+        let response = match http_client.post(&endpoint).multipart(form).send().await {
             Ok(response) => response,
             Err(e) => {
                 error!("Error uploading file: {}", e);
@@ -199,4 +233,5 @@ impl Client {
             }
         }
     }
+
 }

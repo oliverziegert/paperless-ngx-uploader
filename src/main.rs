@@ -71,7 +71,8 @@ enum Commands {
     },
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
     let cli = Cli::parse();
 
     // Set up logging
@@ -107,7 +108,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 },
             };
 
-            upload(file, folder, filter, archive, period, delete, allow_insecure, cfg)
+            upload(file, folder, filter, archive, period, delete, allow_insecure, cfg).await
         },
     }
 }
@@ -163,14 +164,14 @@ fn init(endpoint: Option<String>, allow_insecure: bool, cfg: &mut Config) -> Res
 }
 
 #[allow(clippy::too_many_arguments)]
-pub fn upload(file: Option<PathBuf>,
-              folder: Option<PathBuf>,
-              filter: String,
-              archive: bool,
-              period: usize,
-              delete: bool,
-              allow_insecure: bool,
-              cfg: Config) -> Result<(), Box<dyn Error>> {
+pub async fn upload(file: Option<PathBuf>,
+                    folder: Option<PathBuf>,
+                    filter: String,
+                    archive: bool,
+                    period: usize,
+                    delete: bool,
+                    allow_insecure: bool,
+                    cfg: Config) -> Result<(), Box<dyn Error>> {
     debug!("Called: upload");
 
     // Validate endpoint security
@@ -192,6 +193,6 @@ pub fn upload(file: Option<PathBuf>,
             return Err(e.into());
         }
     };
-    client.upload(file, folder, filter, archive, period, delete)
+    client.upload(file, folder, filter, archive, period, delete).await
 }
 
