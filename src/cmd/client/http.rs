@@ -151,7 +151,7 @@ impl Client {
             let file = file.clone();
             let http_client = self.http.clone();
             let endpoint = self.cfg.public_config.endpoint.clone();
-            let permit = semaphore.clone().acquire_owned().await.unwrap();
+            let permit = semaphore.clone().acquire_owned().await?;
 
             set.spawn(async move {
                 let result = Self::upload_file_task(http_client, endpoint, &file).await;
