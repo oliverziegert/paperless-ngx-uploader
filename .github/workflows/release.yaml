@@ -37,7 +37,12 @@ jobs:
         env:
           MACOS_SDK_URL: ${{ secrets.MACOS_SDK_URL }}
         run: |
-          curl -L "$MACOS_SDK_URL" | tar -J -x -C /opt
+          if [ -z "$MACOS_SDK_URL" ]; then
+            echo "Error: MACOS_SDK_URL secret is not set"
+            exit 1
+          fi
+          echo "Downloading macOS SDK from: ${MACOS_SDK_URL:0:50}..." # Show first 50 chars for debugging
+          curl -fsSL "$MACOS_SDK_URL" | tar -J -x -C /opt
       - uses: goreleaser/goreleaser-action@v6.4.0
         with:
           distribution: goreleaser
