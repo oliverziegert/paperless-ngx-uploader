@@ -113,12 +113,12 @@ impl Client {
         Ok(())
     }
 
-    /// Uploads a list of files to Paperless-ngx.
+    /// Uploads a list of files to Paperless-ngx in parallel.
     ///
-    /// This method iterates through the provided files and attempts to upload
-    /// each one. Successfully uploaded files are collected and returned. If an
-    /// individual file upload fails, the error is logged and the method continues
-    /// with the remaining files.
+    /// This method spawns concurrent tasks to upload files in parallel using
+    /// tokio::spawn and JoinSet. Successfully uploaded files are collected and
+    /// returned. If an individual file upload fails, the error is logged and
+    /// the method continues with the remaining files.
     ///
     /// # Arguments
     ///
@@ -134,19 +134,97 @@ impl Client {
     /// logged but do not stop the upload process.
     async fn upload_files(&self, files: &[PathBuf]) -> Result<Vec<PathBuf>, Box<dyn Error>> {
         debug!("Called: Client::upload_files");
-        let mut files_archived: Vec<PathBuf> = Vec::new();
+        use tokio::task::JoinSet;
+
+        let mut set = JoinSet::new();
+
+        // Spawn a task for each file upload
         for file in files.iter() {
-            match self.upload_file(file).await {
-                Ok(_) => {
+            let file = file.clone();
+            let http_client = self.http.clone();
+            let endpoint = self.cfg.public_config.endpoint.clone();
+
+            set.spawn(async move {
+                let result = Self::upload_file_task(http_client, endpoint, &file).await;
+                (file, result)
+            });
+        }
+
+        // Collect results from all tasks
+        let mut files_archived: Vec<PathBuf> = Vec::new();
+        while let Some(result) = set.join_next().await {
+            match result {
+                Ok((file, Ok(_))) => {
                     debug!("File uploaded successfully");
-                    files_archived.push(file.clone())
+                    files_archived.push(file);
+                }
+                Ok((file, Err(e))) => {
+                    error!("Error uploading file {:?}: {}", file, e);
                 }
                 Err(e) => {
-                    error!("Error uploading file: {}", e);
+                    error!("Task join error: {}", e);
                 }
             }
         }
+
         Ok(files_archived)
+    }
+
+    /// Helper method to upload a single file within a spawned task.
+    ///
+    /// This is a static method that can be called from spawned tasks without
+    /// borrowing self. It performs the same upload logic as upload_file but
+    /// takes owned parameters.
+    async fn upload_file_task(
+        http_client: reqwest::Client,
+        endpoint: String,
+        file: &PathBuf,
+    ) -> Result<(), Box<dyn Error + Send + Sync>> {
+        debug!("Called: Client::upload_file_task");
+
+        // Read file content synchronously
+        let file_content = match fs::read(file) {
+            Ok(content) => content,
+            Err(e) => {
+                error!("Error reading file: {}", e);
+                return Err(e.into());
+            }
+        };
+
+        let title = get_title_from_filename(file);
+
+        // Create multipart form with file content
+        let file_name = file.file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("document");
+
+        let part = multipart::Part::bytes(file_content)
+            .file_name(file_name.to_string());
+
+        let form = multipart::Form::new()
+            .part("document", part)
+            .text("title", title.clone());
+
+        debug!("file_name: {}", &title);
+
+        let response = match http_client.post(&endpoint).multipart(form).send().await {
+            Ok(response) => response,
+            Err(e) => {
+                error!("Error uploading file: {}", e);
+                return Err(e.into());
+            }
+        };
+
+        match response.status() {
+            reqwest::StatusCode::OK => {
+                info!("File {} uploaded successfully", &title);
+                Ok(())
+            }
+            _ => {
+                error!("Error uploading file: {}", response.status());
+                Err(format!("Error uploading file: {}", response.status()).into())
+            }
+        }
     }
 
     /// Uploads a single file to Paperless-ngx.
