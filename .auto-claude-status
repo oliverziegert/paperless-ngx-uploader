@@ -1,25 +1,25 @@
 {
   "active": true,
-  "spec": "010-replace-panic-calls-with-proper-error-handling",
+  "spec": "009-split-client-rs-to-separate-concerns-510-lines",
   "state": "building",
   "subtasks": {
-    "completed": 11,
-    "total": 12,
+    "completed": 2,
+    "total": 17,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Verification and Cleanup",
+    "current": "Migrate Helper Functions",
     "id": null,
-    "total": 4
+    "total": 1
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 8,
-    "started_at": "2026-01-25T12:11:26.038072"
+    "number": 4,
+    "started_at": "2026-01-25T14:13:41.345619"
   },
-  "last_update": "2026-01-25T12:21:41.744161"
+  "last_update": "2026-01-25T14:19:47.930228"
 }
