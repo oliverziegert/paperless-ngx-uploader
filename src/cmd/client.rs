@@ -293,10 +293,13 @@ fn archive_files(files: &[PathBuf]) -> Result<(), Box<dyn Error>> {
 /// Returns an error if any file operation fails during the archiving process.
 fn archive_file(file: &PathBuf) -> Result<(), Box<dyn Error>> {
     debug!("Called: Client::archive_file");
-    let archive_folder = file.parent().unwrap().join(ARCHIVE_FOLDER_NAME);
+    let parent = file.parent()
+        .ok_or_else(|| CmdError::InvalidFilePath(file.display().to_string()))?;
+    let archive_folder = parent.join(ARCHIVE_FOLDER_NAME);
     debug!("Creating archive folder: {}", archive_folder.display());
     fs::create_dir_all(&archive_folder)?;
-    let file_name = file.file_name().unwrap();
+    let file_name = file.file_name()
+        .ok_or_else(|| CmdError::InvalidFilePath(file.display().to_string()))?;
     let target_path = archive_folder.join(file_name);
     debug!("Moving file {} to {}", file.display(), target_path.display());
 
