@@ -6,6 +6,7 @@ use reqwest::multipart;
 use std::error::Error;
 use std::fs;
 use std::path::PathBuf;
+use std::time::Duration;
 
 use super::file_ops::{aggregate_files, archive_files, delete_expired_files};
 use super::helpers::get_title_from_filename;
@@ -48,6 +49,8 @@ impl Client {
 
         let client = reqwest::Client::builder()
             .default_headers(header)
+            .timeout(Duration::from_secs(30))
+            .connect_timeout(Duration::from_secs(10))
             .build()
             .map_err(|_| CmdError::ClientCreationFailed)?;
         debug!("HTTP Client created successfully");
