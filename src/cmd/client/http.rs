@@ -132,10 +132,15 @@ impl Client {
     ///
     /// This method does not return errors. Individual file upload failures are
     /// logged but do not stop the upload process.
-    async fn upload_files(&self, files: &[PathBuf]) -> Result<Vec<PathBuf>, Box<dyn Error>> {
+    pub(super) async fn upload_files(&self, files: &[PathBuf]) -> Result<Vec<PathBuf>, Box<dyn Error>> {
         debug!("Called: Client::upload_files");
         use tokio::task::JoinSet;
+        use tokio::sync::Semaphore;
+        use std::sync::Arc;
 
+        const MAX_CONCURRENT_UPLOADS: usize = 10;
+
+        let semaphore = Arc::new(Semaphore::new(MAX_CONCURRENT_UPLOADS));
         let mut set = JoinSet::new();
 
         // Spawn a task for each file upload
@@ -143,9 +148,11 @@ impl Client {
             let file = file.clone();
             let http_client = self.http.clone();
             let endpoint = self.cfg.public_config.endpoint.clone();
+            let permit = semaphore.clone().acquire_owned().await.unwrap();
 
             set.spawn(async move {
                 let result = Self::upload_file_task(http_client, endpoint, &file).await;
+                drop(permit);  // Release semaphore permit when upload completes
                 (file, result)
             });
         }
@@ -227,68 +234,4 @@ impl Client {
         }
     }
 
-    /// Uploads a single file to Paperless-ngx.
-    ///
-    /// This method creates a multipart form containing the file and its title
-    /// (derived from the filename), then posts it to the configured Paperless-ngx
-    /// endpoint. The upload is considered successful only if the server responds
-    /// with HTTP 200 OK.
-    ///
-    /// # Arguments
-    ///
-    /// * `file` - Path to the file to upload
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if:
-    /// - The multipart form cannot be created
-    /// - The HTTP request fails (network error, authentication failure)
-    /// - The server returns a non-200 status code
-    pub(super) async fn upload_file(&self, file: &PathBuf) -> Result<(), Box<dyn Error>> {
-        debug!("Called: Client::upload_file");
-
-        // Read file content synchronously
-        let file_content = match fs::read(file) {
-            Ok(content) => content,
-            Err(e) => {
-                error!("Error reading file: {}", e);
-                return Err(e.into());
-            }
-        };
-
-        let title = get_title_from_filename(file);
-
-        // Create multipart form with file content
-        let file_name = file.file_name()
-            .and_then(|n| n.to_str())
-            .unwrap_or("document");
-
-        let part = multipart::Part::bytes(file_content)
-            .file_name(file_name.to_string());
-
-        let form = multipart::Form::new()
-            .part("document", part)
-            .text("title", title.clone());
-
-        debug!("file_name: {}", &title);
-
-        let response = match self.http.post(&self.cfg.public_config.endpoint).multipart(form).send().await {
-            Ok(response) => response,
-            Err(e) => {
-                error!("Error uploading file: {}", e);
-                return Err(e.into());
-            }
-        };
-
-        match response.status() {
-            reqwest::StatusCode::OK => {
-                info!("File {} uploaded successfully", &title);
-                Ok(())
-            }
-            _ => {
-                error!("Error uploading file: {}", response.status());
-                Err(format!("Error uploading file: {}", response.status()).into())
-            }
-        }
-    }
 }
