@@ -73,7 +73,7 @@ pub fn get_or_create_config_dir() -> Result<PathBuf, CmdError> {
 
     if !config_dir.exists() {
         std::fs::create_dir_all(&config_dir)
-            .map_err(|_| CmdError::ConfigDirCreationFailed(config_dir.display().to_string()))?;
+            .map_err(|_| CmdError::ConfigDirCreationFailed)?;
     }
 
     Ok(config_dir)

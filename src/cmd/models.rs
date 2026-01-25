@@ -35,8 +35,8 @@ pub enum CmdError {
     #[error("Failed to create HTTP client")]
     ClientCreationFailed,
 
-    #[error("Failed to create config directory at {0}")]
-    ConfigDirCreationFailed(String),
+    #[error("Failed to create config directory. Please check directory permissions.")]
+    ConfigDirCreationFailed,
 
     #[error("Unsupported platform (no config dir found). Only Linux, MacOS and Windows are supported.")]
     UnsupportedPlatform,
