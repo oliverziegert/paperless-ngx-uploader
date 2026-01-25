@@ -1,4 +1,3 @@
-use super::*;
 use crate::cmd::config::Config;
 use log::LevelFilter;
 use reqwest::StatusCode;
