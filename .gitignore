@@ -21,3 +21,6 @@ target/
 dist/
 .intentionally-empty-file.o
 /paperless-ngx-uploader.yaml
+
+# Auto Claude data directory
+.auto-claude/

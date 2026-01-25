@@ -16,20 +16,13 @@ pub use crate::cmd::config::models::Config;
 
 const CONFIG_FILE_NAME: &str = "config.yaml";
 
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            public_config: PublicConfig::default(),
-            private_config: PrivateConfig::default(),
-        }
-    }
-}
 
 impl Default for PublicConfig {
     fn default() -> Self {
         let config_dir = get_or_create_config_dir();
         Self {
             endpoint: "http://localhost:8000".into(),
+            allow_insecure: false,
             path: config_dir.join(CONFIG_FILE_NAME),
         }
     }

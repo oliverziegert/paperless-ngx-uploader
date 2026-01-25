@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 ///
 /// This separation ensures sensitive credentials are stored securely
 /// in the platform's native credential manager rather than in plaintext files.
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Default)]
 pub struct Config {
     /// Public configuration (endpoint URL) stored in YAML file
     pub public_config: PublicConfig,
@@ -25,8 +25,16 @@ pub struct Config {
 /// Default location: `~/.config/paperless-ngx-uploader/config.yaml`
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PublicConfig {
-    /// The URL to your Paperless-ngx instance (e.g., "http://localhost:8000")
+    /// The URL to your Paperless-ngx instance (e.g., "https://paperless.example.com")
     pub endpoint: String,
+
+    /// Allow insecure HTTP connections to non-localhost endpoints.
+    ///
+    /// When `false` (default), HTTP connections to remote hosts are rejected
+    /// to prevent sending authentication tokens over unencrypted connections.
+    /// Set to `true` only if you understand the security implications.
+    #[serde(default)]
+    pub allow_insecure: bool,
 
     /// The path to the config file (runtime state, not serialized)
     #[serde(skip_serializing, skip_deserializing)]

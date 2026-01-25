@@ -1,0 +1,25 @@
+{
+  "active": true,
+  "spec": "003-add-https-enforcement-for-paperless-ngx-endpoint-u",
+  "state": "building",
+  "subtasks": {
+    "completed": 6,
+    "total": 12,
+    "in_progress": 1,
+    "failed": 0
+  },
+  "phase": {
+    "current": "Integrate Validation into Workflow",
+    "id": null,
+    "total": 3
+  },
+  "workers": {
+    "active": 0,
+    "max": 1
+  },
+  "session": {
+    "number": 4,
+    "started_at": "2026-01-24T23:38:53.883053"
+  },
+  "last_update": "2026-01-24T23:42:58.582947"
+}

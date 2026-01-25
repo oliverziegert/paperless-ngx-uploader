@@ -17,11 +17,11 @@ jobs:
         with:
           fetch-depth: 0
       - name: Setup Zig Compiler
-        uses: mlugg/setup-zig@v2.1.0
+        uses: mlugg/setup-zig@v2.2.1
       - name: cosign-installer
         uses: sigstore/cosign-installer@v4.0.0
       - name: Anchore SBOM Action
-        uses: anchore/sbom-action/download-syft@v0.21.0
+        uses: anchore/sbom-action/download-syft@v0.22.0
       - name: Docker Setup QEMU
         uses: docker/setup-qemu-action@v3.7.0
       - name: Docker Setup Buildx

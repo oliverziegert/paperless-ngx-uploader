@@ -1,6 +1,6 @@
 [package]
 name = "paperless-ngx-uploader"
-version = "0.1.21"
+version = "0.1.22"
 edition = "2021"
 authors = ["paperless-ngx <paperless-ngx@pc-ziegert.dev>"]
 
@@ -17,6 +17,7 @@ regex = "1.12.2"
 reqwest = { version = "0.13.0", features = ["blocking", "multipart", "rustls", "http2", "system-proxy", "charset"], default-features = false }
 serde = { version = "1.0.228", features = ["derive"] }
 thiserror = { version = "2.0.17"}
+url = "2.5"
 
 [dev-dependencies]
 mockito = { version = "1.7.1" }

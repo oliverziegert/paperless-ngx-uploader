@@ -28,4 +28,7 @@ pub enum CmdError {
     
     #[error("No endpoint configured. Please run 'init' to configure the Paperless-ngx endpoint.")]
     EndpointNotConfigured,
+
+    #[error("Insecure HTTP connection to {0}. Use HTTPS for secure connections, or pass --allow-insecure to allow HTTP (not recommended for remote servers).")]
+    InsecureConnection(String),
 }

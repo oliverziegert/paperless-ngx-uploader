@@ -1,0 +1,39 @@
+{
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true
+  },
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Read(./**)",
+      "Write(./**)",
+      "Edit(./**)",
+      "Glob(./**)",
+      "Grep(./**)",
+      "Read(/Users/oliver.ziegert/Documents/git/paperless-ngx-uploader/.auto-claude/worktrees/tasks/003-add-https-enforcement-for-paperless-ngx-endpoint-u/**)",
+      "Write(/Users/oliver.ziegert/Documents/git/paperless-ngx-uploader/.auto-claude/worktrees/tasks/003-add-https-enforcement-for-paperless-ngx-endpoint-u/**)",
+      "Edit(/Users/oliver.ziegert/Documents/git/paperless-ngx-uploader/.auto-claude/worktrees/tasks/003-add-https-enforcement-for-paperless-ngx-endpoint-u/**)",
+      "Glob(/Users/oliver.ziegert/Documents/git/paperless-ngx-uploader/.auto-claude/worktrees/tasks/003-add-https-enforcement-for-paperless-ngx-endpoint-u/**)",
+      "Grep(/Users/oliver.ziegert/Documents/git/paperless-ngx-uploader/.auto-claude/worktrees/tasks/003-add-https-enforcement-for-paperless-ngx-endpoint-u/**)",
+      "Read(/Users/oliver.ziegert/Documents/git/paperless-ngx-uploader/.auto-claude/worktrees/tasks/003-add-https-enforcement-for-paperless-ngx-endpoint-u/.auto-claude/specs/003-add-https-enforcement-for-paperless-ngx-endpoint-u/**)",
+      "Write(/Users/oliver.ziegert/Documents/git/paperless-ngx-uploader/.auto-claude/worktrees/tasks/003-add-https-enforcement-for-paperless-ngx-endpoint-u/.auto-claude/specs/003-add-https-enforcement-for-paperless-ngx-endpoint-u/**)",
+      "Edit(/Users/oliver.ziegert/Documents/git/paperless-ngx-uploader/.auto-claude/worktrees/tasks/003-add-https-enforcement-for-paperless-ngx-endpoint-u/.auto-claude/specs/003-add-https-enforcement-for-paperless-ngx-endpoint-u/**)",
+      "Read(/Users/oliver.ziegert/Documents/git/paperless-ngx-uploader/.auto-claude/**)",
+      "Write(/Users/oliver.ziegert/Documents/git/paperless-ngx-uploader/.auto-claude/**)",
+      "Edit(/Users/oliver.ziegert/Documents/git/paperless-ngx-uploader/.auto-claude/**)",
+      "Glob(/Users/oliver.ziegert/Documents/git/paperless-ngx-uploader/.auto-claude/**)",
+      "Grep(/Users/oliver.ziegert/Documents/git/paperless-ngx-uploader/.auto-claude/**)",
+      "Bash(*)",
+      "WebFetch(*)",
+      "WebSearch(*)",
+      "mcp__context7__resolve-library-id(*)",
+      "mcp__context7__get-library-docs(*)",
+      "mcp__graphiti-memory__search_nodes(*)",
+      "mcp__graphiti-memory__search_facts(*)",
+      "mcp__graphiti-memory__add_episode(*)",
+      "mcp__graphiti-memory__get_episodes(*)",
+      "mcp__graphiti-memory__get_entity_edge(*)"
+    ]
+  }
+}
