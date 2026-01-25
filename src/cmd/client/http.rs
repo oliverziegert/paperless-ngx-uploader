@@ -4,7 +4,6 @@ use http::header;
 use log::{debug, error, info};
 use reqwest::blocking::multipart;
 use std::error::Error;
-use std::fs;
 use std::path::PathBuf;
 
 use super::file_ops::{aggregate_files, archive_files, delete_expired_files};
