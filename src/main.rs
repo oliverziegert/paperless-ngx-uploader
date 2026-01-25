@@ -86,6 +86,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
             // If a custom config path was provided, set it
             if let Some(path) = cli.config {
                 cfg.public_config.path = path;
+            } else {
+                // No custom path provided - use default config directory
+                let config_dir = match cmd::config::get_or_create_config_dir() {
+                    Ok(dir) => dir,
+                    Err(e) => {
+                        error!("Error creating config directory: {}", e);
+                        return Err(e.into());
+                    }
+                };
+                cfg.public_config.path = config_dir.join("config.yaml");
             }
 
             init(endpoint, allow_insecure, &mut cfg)
