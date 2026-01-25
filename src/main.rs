@@ -193,6 +193,6 @@ pub async fn upload(file: Option<PathBuf>,
             return Err(e.into());
         }
     };
-    client.upload(file, folder, filter, archive, period, delete)
+    client.upload(file, folder, filter, archive, period, delete).await
 }
 

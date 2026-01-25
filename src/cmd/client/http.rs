@@ -2,8 +2,9 @@ use crate::cmd::config::Config;
 use crate::cmd::models::CmdError;
 use http::header;
 use log::{debug, error, info};
-use reqwest::blocking::multipart;
+use reqwest::multipart;
 use std::error::Error;
+use std::fs;
 use std::path::PathBuf;
 
 use super::file_ops::{aggregate_files, archive_files, delete_expired_files};
@@ -14,13 +15,13 @@ const HEADER_AUTH_PREFIX: &str = "Token ";
 
 pub struct Client {
     pub(super) cfg: Config,
-    http: reqwest::blocking::Client,
+    http: reqwest::Client,
 }
 
 impl Client {
     /// Creates a new `Client` with the given `Config`.
     ///
-    /// The `Config` is used to create a `reqwest::blocking::Client` with the
+    /// The `Config` is used to create a `reqwest::Client` with the
     /// `Authorization` header set to the token configured in the `Config`.
     ///
     /// # Errors
@@ -45,7 +46,7 @@ impl Client {
         );
         debug!("Accept header set");
 
-        let client = reqwest::blocking::Client::builder()
+        let client = reqwest::Client::builder()
             .default_headers(header)
             .build()
             .map_err(|_| CmdError::ClientCreationFailed)?;
@@ -76,7 +77,7 @@ impl Client {
     /// - File upload fails (network error, authentication failure, server error)
     /// - Archival fails (unable to create archive folder, file move error)
     /// - Deletion fails (unable to delete expired files)
-    pub fn upload(
+    pub async fn upload(
         &self,
         file: Option<PathBuf>,
         folder: Option<PathBuf>,
@@ -93,7 +94,7 @@ impl Client {
             return Ok(());
         }
 
-        let files_to_archive = match self.upload_files(files) {
+        let files_to_archive = match self.upload_files(files).await {
             Ok(files) => files,
             Err(e) => {
                 error!("Error uploading files: {}", e);
@@ -131,11 +132,11 @@ impl Client {
     ///
     /// This method does not return errors. Individual file upload failures are
     /// logged but do not stop the upload process.
-    fn upload_files(&self, files: &[PathBuf]) -> Result<Vec<PathBuf>, Box<dyn Error>> {
+    async fn upload_files(&self, files: &[PathBuf]) -> Result<Vec<PathBuf>, Box<dyn Error>> {
         debug!("Called: Client::upload_files");
         let mut files_archived: Vec<PathBuf> = Vec::new();
         for file in files.iter() {
-            match self.upload_file(file) {
+            match self.upload_file(file).await {
                 Ok(_) => {
                     debug!("File uploaded successfully");
                     files_archived.push(file.clone())
@@ -165,22 +166,35 @@ impl Client {
     /// - The multipart form cannot be created
     /// - The HTTP request fails (network error, authentication failure)
     /// - The server returns a non-200 status code
-    pub(super) fn upload_file(&self, file: &PathBuf) -> Result<(), Box<dyn Error>> {
+    pub(super) async fn upload_file(&self, file: &PathBuf) -> Result<(), Box<dyn Error>> {
         debug!("Called: Client::upload_file");
 
-        let mut form = match multipart::Form::new().file("document", file) {
-            Ok(form) => form,
+        // Read file content synchronously
+        let file_content = match fs::read(file) {
+            Ok(content) => content,
             Err(e) => {
-                error!("Error creating multipart form: {}", e);
+                error!("Error reading file: {}", e);
                 return Err(e.into());
             }
         };
 
         let title = get_title_from_filename(file);
-        form = form.text("title", title.clone());
+
+        // Create multipart form with file content
+        let file_name = file.file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("document");
+
+        let part = multipart::Part::bytes(file_content)
+            .file_name(file_name.to_string());
+
+        let form = multipart::Form::new()
+            .part("document", part)
+            .text("title", title.clone());
+
         debug!("file_name: {}", &title);
 
-        let response = match self.http.post(&self.cfg.public_config.endpoint).multipart(form).send() {
+        let response = match self.http.post(&self.cfg.public_config.endpoint).multipart(form).send().await {
             Ok(response) => response,
             Err(e) => {
                 error!("Error uploading file: {}", e);
