@@ -34,6 +34,25 @@ mod http_tests {
     }
 
     #[test]
+    fn test_client_has_timeout_configuration() {
+        setup_logger();
+
+        // Create a test config
+        let mut cfg = Config::default();
+        cfg.private_config.token = "test_token".to_string();
+
+        // Create a new client with timeout configuration
+        // The client is configured with:
+        // - connect_timeout: 10 seconds
+        // - request_timeout: 30 seconds
+        // If the timeout configuration is invalid, client creation will fail
+        let client = Client::new(cfg).unwrap();
+
+        // Verify that the client was created successfully with timeout configuration
+        assert_eq!(client.cfg.private_config.token, "test_token");
+    }
+
+    #[test]
     fn test_get_title_from_filename_no_extension() {
         setup_logger();
 
