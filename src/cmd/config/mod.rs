@@ -65,7 +65,7 @@ pub trait HandleConfig {
     fn delete(&self) -> Result<(), CmdError>;
 }
 
-fn get_or_create_config_dir() -> Result<PathBuf, CmdError> {
+pub fn get_or_create_config_dir() -> Result<PathBuf, CmdError> {
     let config_dir = dirs::config_dir()
         .ok_or(CmdError::UnsupportedPlatform)?;
 
