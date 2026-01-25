@@ -1,4 +1,5 @@
 use crate::cmd::config::Config;
+use crate::cmd::models::CmdError;
 use http::header;
 use log::{debug, error, info};
 use regex::Regex;
@@ -28,9 +29,8 @@ impl Client {
     ///
     /// # Errors
     ///
-    /// If an error occurs while creating the `reqwest::blocking::Client`, this
-    /// function will panic.
-    pub(crate) fn new(cfg: Config) -> Self {
+    /// Returns `Err(CmdError::ClientCreationFailed)` if the HTTP client cannot be created.
+    pub(crate) fn new(cfg: Config) -> Result<Self, CmdError> {
         debug!("Creating new Client with provided Config");
 
         let mut header = header::HeaderMap::new();
@@ -50,21 +50,11 @@ impl Client {
 
         let client = reqwest::blocking::Client::builder()
             .default_headers(header)
-            .build();
-        debug!("HTTP Client builder initialized");
+            .build()
+            .map_err(|_| CmdError::ClientCreationFailed)?;
+        debug!("HTTP Client created successfully");
 
-        let client = match client {
-            Ok(client) => {
-                debug!("HTTP Client created successfully");
-                client
-            }
-            Err(e) => {
-                error!("Error creating client: {}", e);
-                panic!("Error creating client: {}", e);
-            }
-        };
-
-        Self { cfg, http: client }
+        Ok(Self { cfg, http: client })
     }
 
     /// Uploads documents to Paperless-ngx with optional archival and cleanup.
@@ -424,7 +414,7 @@ mod tests {
         cfg.private_config.token = "test_token".to_string();
 
         // Create a new client
-        let client = Client::new(cfg);
+        let client = Client::new(cfg).unwrap();
 
         // Check that the client was created successfully
         assert_eq!(client.cfg.private_config.token, "test_token");
@@ -488,7 +478,7 @@ mod tests {
         let mut cfg = Config::default();
         cfg.private_config.token = "token".to_string();
         cfg.public_config.endpoint = format!("{}/api/endpoint", _s.url());
-        let client = Client::new(cfg);
+        let client = Client::new(cfg).unwrap();
 
         let file_path = PathBuf::from("test_file.txt");
         fs::File::create(&file_path).unwrap();
@@ -506,7 +496,7 @@ mod tests {
         setup_logger();
 
         let cfg = Config::default();
-        let client = Client::new(cfg);
+        let client = Client::new(cfg).unwrap();
 
         let file_path = PathBuf::from("non_existent_file.txt");
 
@@ -526,7 +516,7 @@ mod tests {
         let mut cfg = Config::default();
         cfg.private_config.token = "token".to_string();
         cfg.public_config.endpoint = format!("{}/api/endpoint", _s.url());
-        let client = Client::new(cfg);
+        let client = Client::new(cfg).unwrap();
 
         let file_path = PathBuf::from("test_file.txt");
         fs::File::create(&file_path).unwrap();
@@ -552,7 +542,7 @@ mod tests {
         let mut cfg = Config::default();
         cfg.private_config.token = "token".to_string();
         cfg.public_config.endpoint = format!("{}/api/endpoint", _s.url());
-        let client = Client::new(cfg);
+        let client = Client::new(cfg).unwrap();
 
 
         let file_path = PathBuf::from("test_file.txt");
