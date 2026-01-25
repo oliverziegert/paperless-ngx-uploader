@@ -328,7 +328,9 @@ fn delete_expired_files(files: &[PathBuf], period: usize) -> Result<(), Box<dyn 
     // Iterate over each file in the list
     for file in files.iter() {
         debug!("Attempting to delete archived files for: {}", file.display());
-        let archive_folder = file.parent().unwrap().join(ARCHIVE_FOLDER_NAME);
+        let parent = file.parent()
+            .ok_or_else(|| CmdError::InvalidFilePath(file.display().to_string()))?;
+        let archive_folder = parent.join(ARCHIVE_FOLDER_NAME);
         if !archive_folder.is_dir() {
             debug!("Archive folder does not exist: {}", archive_folder.display());
             continue;
