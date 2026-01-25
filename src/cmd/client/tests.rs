@@ -78,15 +78,16 @@ mod http_tests {
         assert_eq!(get_title_from_filename(&file), expected_title);
     }
 
-    #[test]
-    fn test_upload_file_success() {
+    #[tokio::test]
+    async fn test_upload_file_success() {
         setup_logger();
 
-        let mut _s = mockito::Server::new();
+        let mut _s = mockito::Server::new_async().await;
         let _m = _s.mock("POST", "/api/endpoint")
             .match_header("Authorization", "Token token")
             .with_status(StatusCode::OK.as_u16() as usize)
-            .create();
+            .create_async()
+            .await;
 
         let mut cfg = Config::default();
         cfg.private_config.token = "token".to_string();
@@ -96,7 +97,7 @@ mod http_tests {
         let file_path = PathBuf::from("test_file.txt");
         fs::File::create(&file_path).unwrap();
 
-        assert!(client.upload_file(&file_path).is_ok());
+        assert!(client.upload_file(&file_path).await.is_ok());
         _m.assert();
 
         // Delete the test file if possible
@@ -104,8 +105,8 @@ mod http_tests {
         let _ = fs::remove_file(file_path);
     }
 
-    #[test]
-    fn test_upload_file_error_creating_form() {
+    #[tokio::test]
+    async fn test_upload_file_error_creating_form() {
         setup_logger();
 
         let cfg = Config::default();
@@ -113,18 +114,19 @@ mod http_tests {
 
         let file_path = PathBuf::from("non_existent_file.txt");
 
-        assert!(client.upload_file(&file_path).is_err());
+        assert!(client.upload_file(&file_path).await.is_err());
     }
 
-    #[test]
-    fn test_upload_file_error_sending_request() {
+    #[tokio::test]
+    async fn test_upload_file_error_sending_request() {
         setup_logger();
 
-        let mut _s = mockito::Server::new();
+        let mut _s = mockito::Server::new_async().await;
         let _m = _s.mock("POST", "/api/endpoint")
             .match_header("Authorization", "Token token")
             .with_status(StatusCode::INTERNAL_SERVER_ERROR.as_u16() as usize)
-            .create();
+            .create_async()
+            .await;
 
         let mut cfg = Config::default();
         cfg.private_config.token = "token".to_string();
@@ -134,7 +136,7 @@ mod http_tests {
         let file_path = PathBuf::from("test_file.txt");
         fs::File::create(&file_path).unwrap();
 
-        assert!(client.upload_file(&file_path).is_err());
+        assert!(client.upload_file(&file_path).await.is_err());
         _m.assert();
 
         // Delete the test file if possible
@@ -142,15 +144,16 @@ mod http_tests {
         let _ = fs::remove_file(file_path);
     }
 
-    #[test]
-    fn test_upload_file_non_ok_status() {
+    #[tokio::test]
+    async fn test_upload_file_non_ok_status() {
         setup_logger();
 
-        let mut _s = mockito::Server::new();
+        let mut _s = mockito::Server::new_async().await;
         let _m = _s.mock("POST", "/api/endpoint")
             .match_header("Authorization", "Token token")
             .with_status(StatusCode::BAD_REQUEST.as_u16() as usize)
-            .create();
+            .create_async()
+            .await;
 
         let mut cfg = Config::default();
         cfg.private_config.token = "token".to_string();
@@ -161,7 +164,7 @@ mod http_tests {
         let file_path = PathBuf::from("test_file.txt");
         fs::File::create(&file_path).unwrap();
 
-        assert!(client.upload_file(&file_path).is_err());
+        assert!(client.upload_file(&file_path).await.is_err());
         _m.assert();
 
         // Delete the test file if possible
