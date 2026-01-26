@@ -21,7 +21,7 @@ const KEYRING_TOKEN_NAME: &str = "token";
 ///
 /// # Platform Behavior
 ///
-/// - **Linux**: Uses the Secret Service API (typically GNOME Keyring or KWallet)
+/// - **Linux**: Uses the Secret Service API (typically GNOME Keyring or `KWallet`)
 /// - **macOS**: Uses the Keychain
 /// - **Windows**: Uses the Credential Manager
 ///
@@ -35,8 +35,7 @@ const KEYRING_TOKEN_NAME: &str = "token";
 /// on the current platform.
 fn setup_keyring() -> Result<Entry, CmdError> {
     debug!("Config::PrivateConfig::setup_keyring called");
-    Entry::new(APP_NAME, KEYRING_TOKEN_NAME)
-        .map_err(|_| CmdError::KeyringNotAvailable)
+    Entry::new(APP_NAME, KEYRING_TOKEN_NAME).map_err(|_| CmdError::KeyringNotAvailable)
 }
 
 impl HandleConfig for PrivateConfig {
@@ -52,7 +51,9 @@ impl HandleConfig for PrivateConfig {
         debug!("Config::PrivateConfig::save called");
         let entry = setup_keyring()?;
         debug!("Saving token to keyring");
-        entry.set_password(self.token.as_str()).map_err(|_| CmdError::KeyringSaveFailed)?;
+        entry
+            .set_password(self.token.as_str())
+            .map_err(|_| CmdError::KeyringSaveFailed)?;
         Ok(())
     }
 

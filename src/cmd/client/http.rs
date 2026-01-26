@@ -13,7 +13,6 @@ use super::helpers::get_title_from_filename;
 
 const HEADER_AUTH_PREFIX: &str = "Token ";
 
-
 pub struct Client {
     pub(super) cfg: Config,
     http: reqwest::Client,
@@ -41,10 +40,7 @@ impl Client {
         header.insert(header::AUTHORIZATION, header_auth_value);
         debug!("Authorization header set");
 
-        header.insert(
-            header::ACCEPT,
-            header::HeaderValue::from_static("application/json"),
-        );
+        header.insert(header::ACCEPT, header::HeaderValue::from_static("application/json"));
         debug!("Accept header set");
 
         let client = reqwest::Client::builder()
@@ -90,7 +86,7 @@ impl Client {
         delete: bool,
     ) -> Result<(), Box<dyn Error>> {
         debug!("Called: Client::upload");
-        let files = &aggregate_files(file, folder, filter)?;
+        let files = &aggregate_files(file, folder, &filter)?;
 
         if files.is_empty() {
             info!("No files found. Nothing to do.");
@@ -100,7 +96,7 @@ impl Client {
         let files_to_archive = match self.upload_files(files).await {
             Ok(files) => files,
             Err(e) => {
-                error!("Error uploading files: {}", e);
+                error!("Error uploading files: {e}");
                 return Err(e);
             }
         };
@@ -119,7 +115,7 @@ impl Client {
     /// Uploads a list of files to Paperless-ngx in parallel.
     ///
     /// This method spawns concurrent tasks to upload files in parallel using
-    /// tokio::spawn and JoinSet. Successfully uploaded files are collected and
+    /// `tokio::spawn` and `JoinSet`. Successfully uploaded files are collected and
     /// returned. If an individual file upload fails, the error is logged and
     /// the method continues with the remaining files.
     ///
@@ -135,19 +131,23 @@ impl Client {
     ///
     /// This method does not return errors. Individual file upload failures are
     /// logged but do not stop the upload process.
-    pub(super) async fn upload_files(&self, files: &[PathBuf]) -> Result<Vec<PathBuf>, Box<dyn Error>> {
-        debug!("Called: Client::upload_files");
-        use tokio::task::JoinSet;
-        use tokio::sync::Semaphore;
+    pub(super) async fn upload_files(
+        &self,
+        files: &[PathBuf],
+    ) -> Result<Vec<PathBuf>, Box<dyn Error>> {
         use std::sync::Arc;
+        use tokio::sync::Semaphore;
+        use tokio::task::JoinSet;
 
         const MAX_CONCURRENT_UPLOADS: usize = 10;
+
+        debug!("Called: Client::upload_files");
 
         let semaphore = Arc::new(Semaphore::new(MAX_CONCURRENT_UPLOADS));
         let mut set = JoinSet::new();
 
         // Spawn a task for each file upload
-        for file in files.iter() {
+        for file in files {
             let file = file.clone();
             let http_client = self.http.clone();
             let endpoint = self.cfg.public_config.endpoint.clone();
@@ -155,7 +155,7 @@ impl Client {
 
             set.spawn(async move {
                 let result = Self::upload_file_task(http_client, endpoint, &file).await;
-                drop(permit);  // Release semaphore permit when upload completes
+                drop(permit); // Release semaphore permit when upload completes
                 (file, result)
             });
         }
@@ -164,15 +164,16 @@ impl Client {
         let mut files_archived: Vec<PathBuf> = Vec::new();
         while let Some(result) = set.join_next().await {
             match result {
-                Ok((file, Ok(_))) => {
+                Ok((file, Ok(()))) => {
                     debug!("File uploaded successfully");
                     files_archived.push(file);
                 }
                 Ok((file, Err(e))) => {
-                    error!("Error uploading file {:?}: {}", file, e);
+                    let file_display = file.display();
+                    error!("Error uploading file {file_display}: {e}");
                 }
                 Err(e) => {
-                    error!("Task join error: {}", e);
+                    error!("Task join error: {e}");
                 }
             }
         }
@@ -183,7 +184,7 @@ impl Client {
     /// Helper method to upload a single file within a spawned task.
     ///
     /// This is a static method that can be called from spawned tasks without
-    /// borrowing self. It performs the same upload logic as upload_file but
+    /// borrowing self. It performs the same upload logic but
     /// takes owned parameters.
     async fn upload_file_task(
         http_client: reqwest::Client,
@@ -196,7 +197,7 @@ impl Client {
         let file_content = match fs::read(file) {
             Ok(content) => content,
             Err(e) => {
-                error!("Error reading file: {}", e);
+                error!("Error reading file: {e}");
                 return Err(e.into());
             }
         };
@@ -204,37 +205,29 @@ impl Client {
         let title = get_title_from_filename(file);
 
         // Create multipart form with file content
-        let file_name = file.file_name()
-            .and_then(|n| n.to_str())
-            .unwrap_or("document");
+        let file_name = file.file_name().and_then(|n| n.to_str()).unwrap_or("document");
 
-        let part = multipart::Part::bytes(file_content)
-            .file_name(file_name.to_string());
+        let part = multipart::Part::bytes(file_content).file_name(file_name.to_string());
 
-        let form = multipart::Form::new()
-            .part("document", part)
-            .text("title", title.clone());
+        let form = multipart::Form::new().part("document", part).text("title", title.clone());
 
         debug!("file_name: {}", &title);
 
         let response = match http_client.post(&endpoint).multipart(form).send().await {
             Ok(response) => response,
             Err(e) => {
-                error!("Error uploading file: {}", e);
+                error!("Error uploading file: {e}");
                 return Err(e.into());
             }
         };
 
-        match response.status() {
-            reqwest::StatusCode::OK => {
-                info!("File {} uploaded successfully", &title);
-                Ok(())
-            }
-            _ => {
-                error!("Error uploading file: {}", response.status());
-                Err(format!("Error uploading file: {}", response.status()).into())
-            }
+        let status = response.status();
+        if status == reqwest::StatusCode::OK {
+            info!("File {title} uploaded successfully");
+            Ok(())
+        } else {
+            error!("Error uploading file: {status}");
+            Err(format!("Error uploading file: {status}").into())
         }
     }
-
 }

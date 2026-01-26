@@ -18,7 +18,7 @@ pub(crate) fn get_title_from_filename(file: &std::path::Path) -> String {
     };
     let extension = match file.extension() {
         Some(ext) => format!(".{}", ext.to_str().unwrap_or("")),
-        None => "".to_string(),
+        None => String::new(),
     };
     let name = file_name.replace(extension.as_str(), "");
     // Truncate the name to a maximum length of `MAX_TITLE_LENGTH`.

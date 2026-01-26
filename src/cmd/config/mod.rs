@@ -1,21 +1,20 @@
-pub mod keyring;
 mod file;
+pub mod keyring;
 mod models;
 
 #[cfg(test)]
 mod tests;
 
+use crate::cmd::config::models::PublicConfig;
+use crate::cmd::models::CmdError;
+use crate::cmd::APP_NAME;
 use log::debug;
 use std::path::PathBuf;
-use crate::cmd::APP_NAME;
-use crate::cmd::config::models::{PrivateConfig, PublicConfig};
-use crate::cmd::models::CmdError;
 
 // Re-export Config publicly so it can be used from main.rs
 pub use crate::cmd::config::models::Config;
 
 const CONFIG_FILE_NAME: &str = "config.yaml";
-
 
 impl Default for PublicConfig {
     fn default() -> Self {
@@ -25,14 +24,6 @@ impl Default for PublicConfig {
             endpoint: "http://localhost:8000".into(),
             allow_insecure: false,
             path: PathBuf::new(), // Empty path - will be set in Config::load()
-        }
-    }
-}
-
-impl Default for PrivateConfig {
-    fn default() -> Self {
-        Self {
-            token: "".into(),
         }
     }
 }
@@ -66,14 +57,12 @@ pub trait HandleConfig {
 }
 
 pub fn get_or_create_config_dir() -> Result<PathBuf, CmdError> {
-    let config_dir = dirs::config_dir()
-        .ok_or(CmdError::UnsupportedPlatform)?;
+    let config_dir = dirs::config_dir().ok_or(CmdError::UnsupportedPlatform)?;
 
     let config_dir = config_dir.join(APP_NAME);
 
     if !config_dir.exists() {
-        std::fs::create_dir_all(&config_dir)
-            .map_err(|_| CmdError::ConfigDirCreationFailed)?;
+        std::fs::create_dir_all(&config_dir).map_err(|_| CmdError::ConfigDirCreationFailed)?;
     }
 
     Ok(config_dir)
@@ -105,7 +94,7 @@ impl Config {
 
         // Set the config file path (use provided path or default)
         if let Some(path) = config_path {
-            config.public_config.path = path.clone();
+            config.public_config.path.clone_from(path);
         } else {
             // No custom path provided - use default config directory
             let config_dir = get_or_create_config_dir()?;

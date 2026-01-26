@@ -8,24 +8,21 @@ use super::models::CmdError;
 /// Returns true if the URL uses HTTPS protocol
 pub fn is_https(url: &Url) -> bool {
     let result = url.scheme() == "https";
-    debug!("Called: is_https; url: {}, result: {}", url, result);
+    debug!("Called: is_https; url: {url}, result: {result}");
     result
 }
 
 /// Check if the URL host is localhost
 ///
-/// Returns true if the host is localhost, 127.0.0.1, or [::1]
+/// Returns true if the host is localhost, 127.0.0.1, or [`::1`]
 pub fn is_localhost(url: &Url) -> bool {
     let result = match url.host_str() {
         Some(host) => {
-            host == "localhost"
-                || host == "127.0.0.1"
-                || host == "[::1]"
-                || host == "::1"
+            host == "localhost" || host == "127.0.0.1" || host == "[::1]" || host == "::1"
         }
         None => false,
     };
-    debug!("Called: is_localhost; url: {}, result: {}", url, result);
+    debug!("Called: is_localhost; url: {url}, result: {result}");
     result
 }
 
@@ -37,12 +34,12 @@ pub fn is_localhost(url: &Url) -> bool {
 ///
 /// Returns Ok(()) if the endpoint is secure, or Err(InsecureConnection) if not
 pub fn validate_endpoint_security(endpoint: &str) -> Result<(), CmdError> {
-    debug!("Called: validate_endpoint_security; endpoint: {}", endpoint);
+    debug!("Called: validate_endpoint_security; endpoint: {endpoint}");
 
     let url = match Url::parse(endpoint) {
         Ok(url) => url,
         Err(e) => {
-            debug!("Failed to parse URL: {}", e);
+            debug!("Failed to parse URL: {e}");
             // If we can't parse the URL, treat it as potentially insecure
             return Err(CmdError::InsecureConnection(endpoint.to_string()));
         }
@@ -72,10 +69,7 @@ mod tests {
 
     /// Sets up the test logger to capture log output during tests.
     fn setup_logger() {
-        let _ = env_logger::builder()
-            .filter_level(LevelFilter::Debug)
-            .is_test(true)
-            .try_init();
+        let _ = env_logger::builder().filter_level(LevelFilter::Debug).is_test(true).try_init();
     }
 
     #[cfg(test)]
@@ -224,7 +218,9 @@ mod tests {
         fn test_https_with_path_is_secure() {
             setup_logger();
 
-            let result = validate_endpoint_security("https://paperless.example.com/api/documents/post_document/");
+            let result = validate_endpoint_security(
+                "https://paperless.example.com/api/documents/post_document/",
+            );
             assert!(result.is_ok());
         }
 

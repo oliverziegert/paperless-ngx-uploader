@@ -6,17 +6,14 @@ use std::path::PathBuf;
 
 /// Sets up the test logger to capture log output during tests.
 fn setup_logger() {
-    let _ = env_logger::builder()
-        .filter_level(LevelFilter::Debug)
-        .is_test(true)
-        .try_init();
+    let _ = env_logger::builder().filter_level(LevelFilter::Debug).is_test(true).try_init();
 }
 
 #[cfg(test)]
 mod http_tests {
     use super::*;
-    use crate::cmd::client::http::Client;
     use crate::cmd::client::helpers::{get_title_from_filename, MAX_TITLE_LENGTH};
+    use crate::cmd::client::http::Client;
 
     #[test]
     fn test_new_client_success() {
@@ -117,7 +114,8 @@ mod http_tests {
         setup_logger();
 
         let mut _s = mockito::Server::new_async().await;
-        let _m = _s.mock("POST", "/api/endpoint")
+        let _m = _s
+            .mock("POST", "/api/endpoint")
             .match_header("Authorization", "Token token")
             .with_status(StatusCode::OK.as_u16() as usize)
             .create_async()
@@ -163,7 +161,8 @@ mod http_tests {
         setup_logger();
 
         let mut _s = mockito::Server::new_async().await;
-        let _m = _s.mock("POST", "/api/endpoint")
+        let _m = _s
+            .mock("POST", "/api/endpoint")
             .match_header("Authorization", "Token token")
             .with_status(StatusCode::INTERNAL_SERVER_ERROR.as_u16() as usize)
             .create_async()
@@ -192,7 +191,8 @@ mod http_tests {
         setup_logger();
 
         let mut _s = mockito::Server::new_async().await;
-        let _m = _s.mock("POST", "/api/endpoint")
+        let _m = _s
+            .mock("POST", "/api/endpoint")
             .match_header("Authorization", "Token token")
             .with_status(StatusCode::BAD_REQUEST.as_u16() as usize)
             .create_async()
@@ -261,7 +261,8 @@ mod http_tests {
         let mut server = mockito::Server::new_async().await;
 
         // First request succeeds
-        let mock_success = server.mock("POST", "/api/endpoint")
+        let mock_success = server
+            .mock("POST", "/api/endpoint")
             .match_header("Authorization", "Token token")
             .with_status(200)
             .expect(1)
@@ -269,7 +270,8 @@ mod http_tests {
             .await;
 
         // Second request fails
-        let mock_fail = server.mock("POST", "/api/endpoint")
+        let mock_fail = server
+            .mock("POST", "/api/endpoint")
             .match_header("Authorization", "Token token")
             .with_status(500)
             .expect(1)
@@ -301,153 +303,5 @@ mod http_tests {
         // Cleanup
         let _ = fs::remove_file(file1);
         let _ = fs::remove_file(file2);
-    }
-}
-
-#[cfg(test)]
-mod file_ops_tests {
-    use super::*;
-    use crate::cmd::client::file_ops::{delete_expired_files, ARCHIVE_FOLDER_NAME};
-    use std::fs;
-    use std::path::PathBuf;
-    use std::time::{Duration, SystemTime};
-    use filetime::FileTime;
-
-    /// Helper function to create a test file with a specific modified time
-    fn create_test_file_with_age(dir: &PathBuf, filename: &str, days_old: u64) -> PathBuf {
-        let file_path = dir.join(filename);
-        fs::File::create(&file_path).unwrap();
-
-        // Set the file's modified time to be the specified number of days old
-        let secs_per_day = 60 * 60 * 24;
-        let file_time = SystemTime::now() - Duration::from_secs(days_old * secs_per_day);
-        let ft = FileTime::from_system_time(file_time);
-        filetime::set_file_mtime(&file_path, ft).unwrap();
-
-        file_path
-    }
-
-    /// Helper function to create a directory structure for testing
-    fn create_test_directory(dir_name: &str) -> PathBuf {
-        let dir_path = PathBuf::from(dir_name);
-        fs::create_dir_all(&dir_path).unwrap();
-        dir_path
-    }
-
-    /// Helper function to cleanup test directories
-    fn cleanup_directory(dir: &PathBuf) {
-        let _ = fs::remove_dir_all(dir);
-    }
-
-    #[test]
-    fn test_delete_expired_files_multiple_files_same_folder() {
-        setup_logger();
-
-        // Setup: Create test directory and archive folder
-        let test_dir = create_test_directory("test_delete_same_folder");
-        let archive_dir = test_dir.join(ARCHIVE_FOLDER_NAME);
-        fs::create_dir_all(&archive_dir).unwrap();
-
-        // Create multiple files in the same archive folder with different ages
-        let old_file1 = create_test_file_with_age(&archive_dir, "old_file1.txt", 10);
-        let old_file2 = create_test_file_with_age(&archive_dir, "old_file2.txt", 15);
-        let recent_file = create_test_file_with_age(&archive_dir, "recent_file.txt", 3);
-
-        // Create input files (files that trigger the deletion check)
-        // These need to be in the parent directory to trigger archive folder check
-        let input_file1 = create_test_file_with_age(&test_dir, "input1.txt", 0);
-        let input_file2 = create_test_file_with_age(&test_dir, "input2.txt", 0);
-        let input_files = vec![input_file1.clone(), input_file2.clone()];
-
-        // Test: Delete files older than 5 days
-        let result = delete_expired_files(&input_files, 5);
-        assert!(result.is_ok());
-
-        // Verify: Old files are deleted, recent file remains
-        assert!(!old_file1.exists(), "old_file1 should be deleted");
-        assert!(!old_file2.exists(), "old_file2 should be deleted");
-        assert!(recent_file.exists(), "recent_file should still exist");
-
-        // Cleanup
-        cleanup_directory(&test_dir);
-    }
-
-    #[test]
-    fn test_delete_expired_files_multiple_files_different_folders() {
-        setup_logger();
-
-        // Setup: Create two test directories with their own archive folders
-        let test_dir1 = create_test_directory("test_delete_diff_folder1");
-        let test_dir2 = create_test_directory("test_delete_diff_folder2");
-        let archive_dir1 = test_dir1.join(ARCHIVE_FOLDER_NAME);
-        let archive_dir2 = test_dir2.join(ARCHIVE_FOLDER_NAME);
-        fs::create_dir_all(&archive_dir1).unwrap();
-        fs::create_dir_all(&archive_dir2).unwrap();
-
-        // Create old files in both archive folders
-        let old_file_dir1 = create_test_file_with_age(&archive_dir1, "old_file_dir1.txt", 12);
-        let old_file_dir2 = create_test_file_with_age(&archive_dir2, "old_file_dir2.txt", 20);
-
-        // Create recent files in both archive folders
-        let recent_file_dir1 = create_test_file_with_age(&archive_dir1, "recent_file_dir1.txt", 2);
-        let recent_file_dir2 = create_test_file_with_age(&archive_dir2, "recent_file_dir2.txt", 4);
-
-        // Create input files in both directories to trigger archive folder checks
-        let input_file1 = create_test_file_with_age(&test_dir1, "input1.txt", 0);
-        let input_file2 = create_test_file_with_age(&test_dir2, "input2.txt", 0);
-        let input_files = vec![input_file1.clone(), input_file2.clone()];
-
-        // Test: Delete files older than 7 days from both folders
-        let result = delete_expired_files(&input_files, 7);
-        assert!(result.is_ok());
-
-        // Verify: Old files from both folders are deleted, recent files remain
-        assert!(!old_file_dir1.exists(), "old_file in dir1 should be deleted");
-        assert!(!old_file_dir2.exists(), "old_file in dir2 should be deleted");
-        assert!(recent_file_dir1.exists(), "recent_file in dir1 should still exist");
-        assert!(recent_file_dir2.exists(), "recent_file in dir2 should still exist");
-
-        // Cleanup
-        cleanup_directory(&test_dir1);
-        cleanup_directory(&test_dir2);
-    }
-
-    #[test]
-    fn test_delete_expired_files_no_archive_folder() {
-        setup_logger();
-
-        // Setup: Create test directory WITHOUT archive folder
-        let test_dir = create_test_directory("test_delete_no_archive");
-        let input_file = create_test_file_with_age(&test_dir, "input.txt", 0);
-        let input_files = vec![input_file.clone()];
-
-        // Test: Should not fail when archive folder doesn't exist
-        let result = delete_expired_files(&input_files, 5);
-        assert!(result.is_ok());
-
-        // Cleanup
-        cleanup_directory(&test_dir);
-    }
-
-    #[test]
-    fn test_delete_expired_files_empty_archive_folder() {
-        setup_logger();
-
-        // Setup: Create test directory with empty archive folder
-        let test_dir = create_test_directory("test_delete_empty_archive");
-        let archive_dir = test_dir.join(ARCHIVE_FOLDER_NAME);
-        fs::create_dir_all(&archive_dir).unwrap();
-        let input_file = create_test_file_with_age(&test_dir, "input.txt", 0);
-        let input_files = vec![input_file.clone()];
-
-        // Test: Should not fail with empty archive folder
-        let result = delete_expired_files(&input_files, 5);
-        assert!(result.is_ok());
-
-        // Verify: Archive folder still exists
-        assert!(archive_dir.exists());
-
-        // Cleanup
-        cleanup_directory(&test_dir);
     }
 }

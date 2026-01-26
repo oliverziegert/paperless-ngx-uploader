@@ -1,6 +1,6 @@
 [package]
 name = "paperless-ngx-uploader"
-version = "0.1.33"
+version = "0.1.31"
 edition = "2021"
 authors = ["paperless-ngx <paperless-ngx@pc-ziegert.dev>"]
 
@@ -21,6 +21,10 @@ tokio = { version = "1.48", features = ["full"] }
 url = "2.5"
 
 [dev-dependencies]
-filetime = { version = "0.2" }
 mockito = { version = "1.7.1" }
 tempfile = { version = "3.23.0" }
+
+[lints.clippy]
+pedantic = "warn"
+unwrap_used = "warn"
+expect_used = "warn"

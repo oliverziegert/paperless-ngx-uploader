@@ -1,15 +1,15 @@
 {
   "active": true,
-  "spec": "014-avoid-repeated-archive-folder-existence-checks-in-",
+  "spec": "015-add-ci-cd-pipeline-with-linting-and-formatting-che",
   "state": "building",
   "subtasks": {
-    "completed": 4,
-    "total": 5,
+    "completed": 7,
+    "total": 8,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Verification and Testing",
+    "current": "End-to-End Verification",
     "id": null,
     "total": 2
   },
@@ -18,8 +18,8 @@
     "max": 1
   },
   "session": {
-    "number": 6,
-    "started_at": "2026-01-26T13:28:03.556099"
+    "number": 9,
+    "started_at": "2026-01-26T13:27:53.929816"
   },
-  "last_update": "2026-01-26T13:38:42.330187"
+  "last_update": "2026-01-26T13:46:07.991145"
 }

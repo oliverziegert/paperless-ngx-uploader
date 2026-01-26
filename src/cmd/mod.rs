@@ -1,8 +1,8 @@
-pub mod config;
-pub mod logger;
-pub mod input;
 pub mod client;
-pub mod url_validator;
+pub mod config;
+pub mod input;
+pub mod logger;
 mod models;
+pub mod url_validator;
 
 const APP_NAME: &str = env!("CARGO_PKG_NAME");

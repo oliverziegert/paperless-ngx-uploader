@@ -1,10 +1,10 @@
-use std::error::Error;
 use inquire::{Password, Text};
 use log::{debug, error, info};
+use std::error::Error;
 
 /// Prompts the user to enter a Paperless-ngx endpoint URL.
 ///
-/// Displays an interactive prompt with a placeholder example (https://paperless.example.com)
+/// Displays an interactive prompt with a placeholder example (<https://paperless.example.com>)
 /// and a security warning recommending HTTPS for production use.
 /// Returns the user's input as a string.
 ///
@@ -19,13 +19,13 @@ pub fn get_endpoint_by_prompt() -> Result<String, Box<dyn Error>> {
         .prompt();
     match input {
         Ok(input) => {
-            info!("Endpoint entered: {}", input);
+            info!("Endpoint entered: {input}");
             Ok(input)
-        },
+        }
         Err(e) => {
-            error!("Error getting input: {}", e);
+            error!("Error getting input: {e}");
             Err(e.into())
-        },
+        }
     }
 }
 
@@ -44,10 +44,10 @@ pub fn get_token_by_prompt() -> Result<String, Box<dyn Error>> {
         Ok(input) => {
             info!("Token entered successfully");
             Ok(input)
-        },
+        }
         Err(e) => {
-            error!("Error getting input: {}", e);
+            error!("Error getting input: {e}");
             Err(e.into())
-        },
+        }
     }
 }

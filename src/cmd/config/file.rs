@@ -1,7 +1,7 @@
-use log::debug;
-use crate::cmd::config::HandleConfig;
 use crate::cmd::config::models::PublicConfig;
+use crate::cmd::config::HandleConfig;
 use crate::cmd::models::CmdError;
+use log::debug;
 
 impl HandleConfig for PublicConfig {
     /// Loads a configuration from a file at the given path.
@@ -21,13 +21,13 @@ impl HandleConfig for PublicConfig {
         // Note: path is not overwritten - it's runtime state, not stored config
         debug!("The configuration file path is: {:#?}", &self.path.display());
         debug!("The configuration is:");
-        debug!("{:#?}", self);
+        debug!("{self:#?}");
         Ok(())
     }
 
     fn save(&self) -> Result<(), CmdError> {
         debug!("Config::PublicConfig::save called");
-        debug!("Saving Config: {:#?}", self);
+        debug!("Saving Config: {self:#?}");
         confy::store_path(&self.path, self)
             .map_err(|_| CmdError::ConfigFileSaveFailed(self.path.display().to_string()))
     }

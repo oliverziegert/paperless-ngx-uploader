@@ -6,7 +6,6 @@
 use crate::cmd::models::CmdError;
 use log::{debug, error, info};
 use regex::Regex;
-use std::collections::HashMap;
 use std::error::Error;
 use std::fs;
 use std::path::PathBuf;
@@ -26,10 +25,10 @@ const SECS_PER_DAY: u64 = 60 * 60 * 24;
 pub fn aggregate_files(
     file: Option<PathBuf>,
     folder: Option<PathBuf>,
-    filter: String,
+    filter: &str,
 ) -> Result<Vec<PathBuf>, Box<dyn Error>> {
     let mut paths = Vec::new();
-    let regex = Regex::new(&filter)?;
+    let regex = Regex::new(filter)?;
 
     if let Some(folder_path) = folder {
         let entries = fs::read_dir(folder_path)?;
@@ -71,19 +70,20 @@ pub fn aggregate_files(
 /// # Errors
 ///
 /// Returns an error if any file operation fails during the archiving process.
+#[allow(clippy::unnecessary_wraps)]
 pub fn archive_files(files: &[PathBuf]) -> Result<(), Box<dyn Error>> {
     debug!("Starting archive_files");
     for file in files {
-        debug!("Attempting to archive file: {:?}", file);
+        let file_display = file.display();
+        debug!("Attempting to archive file: {file_display}");
         match archive_file(file) {
-            Ok(_) => debug!("File archived successfully: {:?}", file),
-            Err(e) => error!("Error archiving file {:?}: {}", file, e),
+            Ok(()) => debug!("File archived successfully: {file_display}"),
+            Err(e) => error!("Error archiving file {file_display}: {e}"),
         }
     }
     debug!("Completed archive_files");
     Ok(())
 }
-
 
 /// Archives a single file if it is older than the specified period in days.
 ///
@@ -96,26 +96,30 @@ pub fn archive_files(files: &[PathBuf]) -> Result<(), Box<dyn Error>> {
 /// # Arguments
 ///
 /// * `file` - The file to be archived.
-/// * `period` - The period in days beyond which files should be archived.
 ///
 /// # Errors
 ///
 /// Returns an error if any file operation fails during the archiving process.
 fn archive_file(file: &PathBuf) -> Result<(), Box<dyn Error>> {
     debug!("Called: Client::archive_file");
-    let parent = file.parent()
+    let parent = file
+        .parent()
         .ok_or_else(|| CmdError::InvalidFilePath(file.display().to_string()))?;
     let archive_folder = parent.join(ARCHIVE_FOLDER_NAME);
-    debug!("Creating archive folder: {}", archive_folder.display());
+    let archive_display = archive_folder.display();
+    debug!("Creating archive folder: {archive_display}");
     fs::create_dir_all(&archive_folder)?;
-    let file_name = file.file_name()
+    let file_name = file
+        .file_name()
         .ok_or_else(|| CmdError::InvalidFilePath(file.display().to_string()))?;
     let target_path = archive_folder.join(file_name);
-    debug!("Moving file {} to {}", file.display(), target_path.display());
+    let file_display = file.display();
+    let target_display = target_path.display();
+    debug!("Moving file {file_display} to {target_display}");
 
     // Move the file to the archive folder
     fs::rename(file, &target_path)?;
-    info!("File {} moved to archive folder", file.display());
+    info!("File {file_display} moved to archive folder");
     Ok(())
 }
 
@@ -134,39 +138,31 @@ fn archive_file(file: &PathBuf) -> Result<(), Box<dyn Error>> {
 /// Logs an error if any file cannot be deleted.
 pub fn delete_expired_files(files: &[PathBuf], period: usize) -> Result<(), Box<dyn Error>> {
     debug!("Called: Client::delete_expired_files");
-
-    // Group files by their parent directory to avoid repeated archive folder checks
-    let mut parents_map: HashMap<PathBuf, Vec<&PathBuf>> = HashMap::new();
-    for file in files.iter() {
-        if let Some(parent) = file.parent() {
-            parents_map.entry(parent.to_path_buf())
-                .or_default()
-                .push(file);
-        } else {
-            error!("File has no parent directory: {}", file.display());
-        }
-    }
-
-    // Process archive folder for each unique parent directory
-    for parent in parents_map.keys() {
+    // Iterate over each file in the list
+    for file in files {
+        let file_display = file.display();
+        debug!("Attempting to delete archived files for: {file_display}");
+        let parent = file
+            .parent()
+            .ok_or_else(|| CmdError::InvalidFilePath(file.display().to_string()))?;
         let archive_folder = parent.join(ARCHIVE_FOLDER_NAME);
-        debug!("Checking archive folder: {}", archive_folder.display());
-
         if !archive_folder.is_dir() {
-            debug!("Archive folder does not exist: {}", archive_folder.display());
+            let archive_display = archive_folder.display();
+            debug!("Archive folder does not exist: {archive_display}");
             continue;
         }
-
         let archived_files = fs::read_dir(&archive_folder)?.collect::<Vec<_>>();
         for archived_file in archived_files {
             let archived_file = archived_file?.path();
             match delete_expired_file(&archived_file, period) {
-                Ok(_) => debug!("File deleted successfully: {}", archived_file.display()),
-                Err(e) => error!("Error deleting file: {}", e),
+                Ok(()) => {
+                    let archived_display = archived_file.display();
+                    debug!("File deleted successfully: {archived_display}");
+                }
+                Err(e) => error!("Error deleting file: {e}"),
             };
         }
     }
-
     Ok(())
 }
 
@@ -187,23 +183,25 @@ pub fn delete_expired_files(files: &[PathBuf], period: usize) -> Result<(), Box<
 /// Returns an error if the file's creation date cannot be determined,
 /// if the file is dated in the future, or if the file cannot be deleted.
 fn delete_expired_file(file: &PathBuf, period: usize) -> Result<(), Box<dyn Error>> {
-    debug!("Called: Client::delete_expired_file; file: {:?} period: {}", file, period);
+    let file_display = file.display();
+    debug!("Called: Client::delete_expired_file; file: {file_display} period: {period}");
     let now = SystemTime::now();
-    debug!("Current time: {:?}", now);
+    debug!("Current time: {now:?}");
     let file_datetime = fs::metadata(file)?.modified()?;
-    debug!("File creation time: {:?}", file_datetime);
+    debug!("File creation time: {file_datetime:?}");
     let duration = now.duration_since(file_datetime)?;
     let days = duration.as_secs() / SECS_PER_DAY;
-    debug!("Days since file creation: {}", days);
+    debug!("Days since file creation: {days}");
 
     // Delete the file if it exceeds the specified period
+    let file_display = file.display();
     if days > period as u64 {
-        debug!("File {} is older than {} days, deleting", file.display(), period);
-        debug!("Deleting file: {}", file.display());
+        debug!("File {file_display} is older than {period} days, deleting");
+        debug!("Deleting file: {file_display}");
         fs::remove_file(file)?;
-        info!("File {} deleted", file.display());
+        info!("File {file_display} deleted");
     } else {
-        debug!("File {} is not older than {} days, skipping", file.display(), period);
+        debug!("File {file_display} is not older than {period} days, skipping");
     }
 
     Ok(())

@@ -1,14 +1,14 @@
 mod cmd;
 
+use cmd::config::Config;
+use cmd::input::{get_endpoint_by_prompt, get_token_by_prompt};
 use cmd::logger::setup_logging;
-use cmd::config::*;
-use cmd::input::*;
 use cmd::url_validator::validate_endpoint_security;
 
 use clap::{Parser, Subcommand};
-use std::path::PathBuf;
-use std::error::Error;
 use log::{debug, error, info, warn};
+use std::error::Error;
+use std::path::PathBuf;
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -79,7 +79,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     setup_logging(cli.verbose);
 
     match cli.command {
-        Commands::Init {endpoint, allow_insecure} => {
+        Commands::Init { endpoint, allow_insecure } => {
             // For init, start with a fresh default config (don't try to load existing)
             let mut cfg = Config::default();
 
@@ -91,7 +91,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 let config_dir = match cmd::config::get_or_create_config_dir() {
                     Ok(dir) => dir,
                     Err(e) => {
-                        error!("Error creating config directory: {}", e);
+                        error!("Error creating config directory: {e}");
                         return Err(e.into());
                     }
                 };
@@ -99,32 +99,36 @@ async fn main() -> Result<(), Box<dyn Error>> {
             }
 
             init(endpoint, allow_insecure, &mut cfg)
-        },
-        Commands::Upload {
-            file,
-            folder,
-            filter,
-            archive,
-            period,
-            delete,
-            allow_insecure,
-        } => {
+        }
+        Commands::Upload { file, folder, filter, archive, period, delete, allow_insecure } => {
             // For upload, load existing config (must exist)
             let cfg = match Config::load(cli.config.as_ref()) {
                 Ok(config) => config,
                 Err(e) => {
-                    error!("Error loading config: {}", e);
+                    error!("Error loading config: {e}");
                     return Err(e.into());
-                },
+                }
             };
 
             upload(file, folder, filter, archive, period, delete, allow_insecure, cfg).await
-        },
+        }
     }
 }
 
-fn init(endpoint: Option<String>, allow_insecure: bool, cfg: &mut Config) -> Result<(), Box<dyn Error>> {
-    debug!("init called: endpoint: {:#?}, allow_insecure: {}", endpoint, allow_insecure);
+/// Initializes the configuration by prompting for endpoint and token.
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - Endpoint prompt fails
+/// - Token prompt fails
+/// - Configuration save fails
+fn init(
+    endpoint: Option<String>,
+    allow_insecure: bool,
+    cfg: &mut Config,
+) -> Result<(), Box<dyn Error>> {
+    debug!("init called: endpoint: {endpoint:#?}, allow_insecure: {allow_insecure}");
     if let Some(endpoint) = endpoint {
         cfg.public_config.endpoint = endpoint;
     } else {
@@ -133,7 +137,7 @@ fn init(endpoint: Option<String>, allow_insecure: bool, cfg: &mut Config) -> Res
                 cfg.public_config.endpoint = endpoint;
             }
             Err(e) => {
-                error!("Error getting endpoint: {}", e);
+                error!("Error getting endpoint: {e}");
                 return Err(e);
             }
         }
@@ -142,11 +146,11 @@ fn init(endpoint: Option<String>, allow_insecure: bool, cfg: &mut Config) -> Res
     // Validate endpoint security
     if let Err(e) = validate_endpoint_security(&cfg.public_config.endpoint) {
         if allow_insecure {
-            warn!("⚠️  Security Warning: {}", e);
+            warn!("⚠️  Security Warning: {e}");
             warn!("Proceeding with insecure connection as --allow-insecure was specified.");
             cfg.public_config.allow_insecure = true;
         } else {
-            error!("{}", e);
+            error!("{e}");
             return Err(e.into());
         }
     }
@@ -156,42 +160,49 @@ fn init(endpoint: Option<String>, allow_insecure: bool, cfg: &mut Config) -> Res
             cfg.private_config.token = token;
         }
         Err(e) => {
-            error!("Error getting token: {}", e);
+            error!("Error getting token: {e}");
             return Err(e);
         }
     }
 
-    match cfg.save() {
-        Err(e) => {
-            error!("Error saving config: {}", e);
-            Err("Error saving config".into())
-        }
-        Ok(_) => {
-            info!("Config saved successfully");
-            Ok(())
-        }
+    if let Err(e) = cfg.save() {
+        error!("Error saving config: {e}");
+        Err("Error saving config".into())
+    } else {
+        info!("Config saved successfully");
+        Ok(())
     }
 }
 
+/// Uploads files to Paperless-ngx with optional archival and cleanup.
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - Endpoint security validation fails and insecure connections are not allowed
+/// - HTTP client creation fails
+/// - File upload fails
 #[allow(clippy::too_many_arguments)]
-pub async fn upload(file: Option<PathBuf>,
-                    folder: Option<PathBuf>,
-                    filter: String,
-                    archive: bool,
-                    period: usize,
-                    delete: bool,
-                    allow_insecure: bool,
-                    cfg: Config) -> Result<(), Box<dyn Error>> {
+pub async fn upload(
+    file: Option<PathBuf>,
+    folder: Option<PathBuf>,
+    filter: String,
+    archive: bool,
+    period: usize,
+    delete: bool,
+    allow_insecure: bool,
+    cfg: Config,
+) -> Result<(), Box<dyn Error>> {
     debug!("Called: upload");
 
     // Validate endpoint security
     // CLI --allow-insecure overrides config.allow_insecure
     if let Err(e) = validate_endpoint_security(&cfg.public_config.endpoint) {
         if allow_insecure || cfg.public_config.allow_insecure {
-            warn!("⚠️  Security Warning: {}", e);
+            warn!("⚠️  Security Warning: {e}");
             warn!("Proceeding with insecure connection as allowed by config or --allow-insecure flag.");
         } else {
-            error!("{}", e);
+            error!("{e}");
             return Err(e.into());
         }
     }
@@ -199,10 +210,9 @@ pub async fn upload(file: Option<PathBuf>,
     let client = match cmd::client::Client::new(cfg) {
         Ok(client) => client,
         Err(e) => {
-            error!("Error creating client: {}", e);
+            error!("Error creating client: {e}");
             return Err(e.into());
         }
     };
     client.upload(file, folder, filter, archive, period, delete).await
 }
-

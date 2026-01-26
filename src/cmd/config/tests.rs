@@ -7,10 +7,7 @@ use tempfile::TempDir;
 /// Sets up the test logger to capture log output during tests.
 /// Also configures the keyring to use the mock credential store.
 fn setup_logger() {
-    let _ = env_logger::builder()
-        .filter_level(LevelFilter::Debug)
-        .is_test(true)
-        .try_init();
+    let _ = env_logger::builder().filter_level(LevelFilter::Debug).is_test(true).try_init();
 
     // Set up mock credential store for testing
     // Use ::keyring to refer to the crate, not the local module
@@ -253,15 +250,11 @@ mod private_config_tests {
         let test_token = "test_token_12345";
 
         // Save token using mock credential store
-        let config = PrivateConfig {
-            token: test_token.to_string(),
-        };
+        let config = PrivateConfig { token: test_token.to_string() };
         config.save().unwrap();
 
         // Load token back
-        let mut loaded_config = PrivateConfig {
-            token: String::new(),
-        };
+        let mut loaded_config = PrivateConfig { token: String::new() };
         loaded_config.load().unwrap();
         assert_eq!(loaded_config.token, test_token);
 
@@ -284,18 +277,14 @@ mod private_config_tests {
         let test_token = "delete_test_token";
 
         // Save token using mock credential store
-        let config = PrivateConfig {
-            token: test_token.to_string(),
-        };
+        let config = PrivateConfig { token: test_token.to_string() };
         config.save().unwrap();
 
         // Delete token
         config.delete().unwrap();
 
         // Try to load - should fail with KeyringLoadFailed
-        let mut loaded_config = PrivateConfig {
-            token: String::new(),
-        };
+        let mut loaded_config = PrivateConfig { token: String::new() };
 
         let result = loaded_config.load();
         assert!(result.is_err());
@@ -311,9 +300,7 @@ mod private_config_tests {
         setup_logger();
 
         // Try to load a token that doesn't exist in mock store
-        let mut config = PrivateConfig {
-            token: String::new(),
-        };
+        let mut config = PrivateConfig { token: String::new() };
 
         let result = config.load();
 
@@ -352,9 +339,7 @@ mod config_integration_tests {
                 allow_insecure: false,
                 path: config_path.clone(),
             },
-            private_config: PrivateConfig {
-                token: "integration_test_token".to_string(),
-            },
+            private_config: PrivateConfig { token: "integration_test_token".to_string() },
         };
 
         // Save the config (both file and mock keyring)
@@ -398,9 +383,7 @@ mod config_integration_tests {
                 allow_insecure: false,
                 path: config_path.clone(),
             },
-            private_config: PrivateConfig {
-                token: original_token.to_string(),
-            },
+            private_config: PrivateConfig { token: original_token.to_string() },
         };
 
         config.save().unwrap();
@@ -438,9 +421,7 @@ mod config_integration_tests {
                 allow_insecure: false,
                 path: config_path.clone(),
             },
-            private_config: PrivateConfig {
-                token: "delete_integration_token".to_string(),
-            },
+            private_config: PrivateConfig { token: "delete_integration_token".to_string() },
         };
 
         config.save().unwrap();
@@ -453,9 +434,7 @@ mod config_integration_tests {
         assert!(!config_path.exists());
 
         // Verify token is deleted from mock keyring (loading should fail)
-        let mut test_private = PrivateConfig {
-            token: String::new(),
-        };
+        let mut test_private = PrivateConfig { token: String::new() };
         let load_result = test_private.load();
         assert!(load_result.is_err());
     }
@@ -482,9 +461,7 @@ mod config_integration_tests {
                 allow_insecure: true,
                 path: config_path.clone(),
             },
-            private_config: PrivateConfig {
-                token: "insecure_integration_token".to_string(),
-            },
+            private_config: PrivateConfig { token: "insecure_integration_token".to_string() },
         };
 
         // Save the config (both file and mock keyring)
@@ -498,7 +475,10 @@ mod config_integration_tests {
 
         // Verify all fields including allow_insecure
         assert_eq!(loaded.public_config.endpoint, "http://insecure-integration.example.com");
-        assert!(loaded.public_config.allow_insecure, "allow_insecure should be true after loading");
+        assert!(
+            loaded.public_config.allow_insecure,
+            "allow_insecure should be true after loading"
+        );
         assert_eq!(loaded.private_config.token, "insecure_integration_token");
 
         // Cleanup

@@ -15,6 +15,6 @@ pub fn setup_logging(verbose: u8) {
     };
     // Initialize the logger
     log_builder.init();
-    debug!("Called: setup_logging; verbose: {}", verbose);
+    debug!("Called: setup_logging; verbose: {verbose}");
     debug!("Log level: {:?}", log::max_level());
 }
