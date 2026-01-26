@@ -1,3 +1,31 @@
+## 0.2.1 - Improved Error Handling and Async Performance
+
+### ✨ New Features
+
+- Parallel file uploads using async/await with tokio runtime for significantly improved batch upload throughput
+
+### 🛠️ Improvements
+
+- Configured HTTP client with explicit timeout settings to prevent indefinite hangs and slowloris-style attacks
+- Refactored `src/cmd/client.rs` to split concerns into separate modules, reducing file size from 510 lines to under 500-line limit per project guidelines
+
+### 🐛 Bug Fixes
+
+- Replaced `panic!()` calls in production code paths with graceful error handling in config directory creation (src/cmd/config/mod.rs) and HTTP client initialization (src/cmd/client.rs)
+- Replaced `.unwrap()` calls on `Option<OsStr>` in file path handling with proper error propagation
+- Fixed potential information disclosure by removing system paths and detailed error information from panic messages
+
+---
+
+## What's Changed
+
+- feat: implement parallel file uploads using async runtime by @contributor in 011-implement-parallel-file-uploads-using-async-runtim
+- fix: configure HTTP client timeouts to prevent denial of service by @contributor in 012-configure-http-client-timeouts-to-prevent-denial-o
+- fix: replace panic calls with graceful error handling in production paths by @contributor in 013-replace-panic-with-graceful-error-handling-in-prod
+- refactor: split client.rs to separate HTTP, file operations, and test concerns by @contributor in 009-split-client-rs-to-separate-concerns-510-lines
+- refactor: replace panic and unwrap calls with proper error handling by @contributor in 010-replace-panic-calls-with-proper-error-handling
+
+
 ## 0.2.0 - Security Hardening & Documentation
 
 ### ✨ New Features
