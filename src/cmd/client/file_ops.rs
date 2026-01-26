@@ -6,6 +6,7 @@
 use crate::cmd::models::CmdError;
 use log::{debug, error, info};
 use regex::Regex;
+use std::collections::HashMap;
 use std::error::Error;
 use std::fs;
 use std::path::PathBuf;
@@ -133,16 +134,29 @@ fn archive_file(file: &PathBuf) -> Result<(), Box<dyn Error>> {
 /// Logs an error if any file cannot be deleted.
 pub fn delete_expired_files(files: &[PathBuf], period: usize) -> Result<(), Box<dyn Error>> {
     debug!("Called: Client::delete_expired_files");
-    // Iterate over each file in the list
+
+    // Group files by their parent directory to avoid repeated archive folder checks
+    let mut parents_map: HashMap<PathBuf, Vec<&PathBuf>> = HashMap::new();
     for file in files.iter() {
-        debug!("Attempting to delete archived files for: {}", file.display());
-        let parent = file.parent()
-            .ok_or_else(|| CmdError::InvalidFilePath(file.display().to_string()))?;
+        if let Some(parent) = file.parent() {
+            parents_map.entry(parent.to_path_buf())
+                .or_default()
+                .push(file);
+        } else {
+            error!("File has no parent directory: {}", file.display());
+        }
+    }
+
+    // Process archive folder for each unique parent directory
+    for parent in parents_map.keys() {
         let archive_folder = parent.join(ARCHIVE_FOLDER_NAME);
+        debug!("Checking archive folder: {}", archive_folder.display());
+
         if !archive_folder.is_dir() {
             debug!("Archive folder does not exist: {}", archive_folder.display());
             continue;
         }
+
         let archived_files = fs::read_dir(&archive_folder)?.collect::<Vec<_>>();
         for archived_file in archived_files {
             let archived_file = archived_file?.path();
@@ -152,6 +166,7 @@ pub fn delete_expired_files(files: &[PathBuf], period: usize) -> Result<(), Box<
             };
         }
     }
+
     Ok(())
 }
 
