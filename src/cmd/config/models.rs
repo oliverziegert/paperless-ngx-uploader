@@ -1,5 +1,4 @@
 use std::path::PathBuf;
-use clap::Parser;
 use serde::{Deserialize, Serialize};
 
 /// Application configuration with split storage approach.
@@ -52,12 +51,4 @@ pub struct PublicConfig {
 pub struct PrivateConfig {
     /// Authentication token for your Paperless-ngx instance
     pub token: String,
-}
-
-#[derive(Parser)]
-pub enum ConfigCommand {
-    Ls,
-    Create,
-    Set,
-    Rm
 }
