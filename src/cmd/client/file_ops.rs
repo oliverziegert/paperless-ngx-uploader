@@ -6,6 +6,7 @@
 use crate::cmd::models::CmdError;
 use log::{debug, error, info};
 use regex::Regex;
+use std::collections::HashMap;
 use std::error::Error;
 use std::fs;
 use std::path::PathBuf;

@@ -1,25 +1,25 @@
 {
   "active": true,
-  "spec": "013-replace-panic-with-graceful-error-handling-in-prod",
-  "state": "complete",
+  "spec": "014-avoid-repeated-archive-folder-existence-checks-in-",
+  "state": "planning",
   "subtasks": {
-    "completed": 5,
-    "total": 5,
-    "in_progress": 0,
+    "completed": 0,
+    "total": 0,
+    "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Final Verification",
+    "current": "Optimize delete_expired_files Function",
     "id": null,
-    "total": 2
+    "total": 3
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 6,
-    "started_at": "2026-01-25T21:43:14.217370"
+    "number": 2,
+    "started_at": "2026-01-26T13:28:03.556099"
   },
-  "last_update": "2026-01-25T21:59:39.070506"
+  "last_update": "2026-01-26T13:31:17.480031"
 }
