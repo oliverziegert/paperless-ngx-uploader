@@ -140,7 +140,7 @@ pub fn delete_expired_files(files: &[PathBuf], period: usize) -> Result<(), Box<
     for file in files.iter() {
         if let Some(parent) = file.parent() {
             parents_map.entry(parent.to_path_buf())
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push(file);
         } else {
             error!("File has no parent directory: {}", file.display());
