@@ -3,7 +3,7 @@
   "spec": "017-fix-test-isolation-use-tempfile-for-all-file-opera",
   "state": "building",
   "subtasks": {
-    "completed": 1,
+    "completed": 2,
     "total": 3,
     "in_progress": 1,
     "failed": 0
@@ -18,8 +18,8 @@
     "max": 1
   },
   "session": {
-    "number": 3,
+    "number": 4,
     "started_at": "2026-01-27T22:22:26.667953"
   },
-  "last_update": "2026-01-27T22:30:16.003305"
+  "last_update": "2026-01-27T22:34:24.551836"
 }
