@@ -20,9 +20,13 @@ mod http_tests {
     fn test_new_client_success() {
         setup_logger();
 
+        let temp_dir = TempDir::new().unwrap();
+        let config_path = temp_dir.path().join("config.yaml");
+
         // Create a test config
         let mut cfg = Config::default();
         cfg.private_config.token = "test_token".to_string();
+        cfg.public_config.path = config_path;
 
         // Create a new client
         let client = Client::new(cfg).unwrap();
@@ -35,9 +39,13 @@ mod http_tests {
     fn test_client_has_timeout_configuration() {
         setup_logger();
 
+        let temp_dir = TempDir::new().unwrap();
+        let config_path = temp_dir.path().join("config.yaml");
+
         // Create a test config
         let mut cfg = Config::default();
         cfg.private_config.token = "test_token".to_string();
+        cfg.public_config.path = config_path;
 
         // Create a new client with timeout configuration
         // The client is configured with:
@@ -96,11 +104,17 @@ mod http_tests {
     }
 
     /// Helper function to create a test config for the given mock server URL
-    fn create_test_config(server_url: &str) -> Config {
+    /// Returns both the TempDir (which must be kept alive) and the Config
+    fn create_test_config(server_url: &str) -> (TempDir, Config) {
+        let temp_dir = TempDir::new().unwrap();
+        let config_path = temp_dir.path().join("config.yaml");
+
         let mut cfg = Config::default();
         cfg.private_config.token = "token".to_string();
         cfg.public_config.endpoint = format!("{}/api/endpoint", server_url);
-        cfg
+        cfg.public_config.path = config_path;
+
+        (temp_dir, cfg)
     }
 
     /// Helper function to create a test file in a temporary directory
@@ -124,7 +138,7 @@ mod http_tests {
             .create_async()
             .await;
 
-        let cfg = create_test_config(&_s.url());
+        let (_temp_config_dir, cfg) = create_test_config(&_s.url());
         let client = Client::new(cfg).unwrap();
 
         let (_temp_dir, file_path) = create_test_file("test_file.txt");
@@ -142,7 +156,11 @@ mod http_tests {
     async fn test_upload_file_error_creating_form() {
         setup_logger();
 
-        let cfg = Config::default();
+        let temp_dir = TempDir::new().unwrap();
+        let config_path = temp_dir.path().join("config.yaml");
+
+        let mut cfg = Config::default();
+        cfg.public_config.path = config_path;
         let client = Client::new(cfg).unwrap();
 
         let file_path = PathBuf::from("non_existent_file.txt");
@@ -167,7 +185,7 @@ mod http_tests {
             .create_async()
             .await;
 
-        let cfg = create_test_config(&_s.url());
+        let (_temp_config_dir, cfg) = create_test_config(&_s.url());
         let client = Client::new(cfg).unwrap();
 
         let (_temp_dir, file_path) = create_test_file("test_file.txt");
@@ -193,7 +211,7 @@ mod http_tests {
             .create_async()
             .await;
 
-        let cfg = create_test_config(&_s.url());
+        let (_temp_config_dir, cfg) = create_test_config(&_s.url());
         let client = Client::new(cfg).unwrap();
 
         let (_temp_dir, file_path) = create_test_file("test_file.txt");
@@ -220,7 +238,7 @@ mod http_tests {
             .create_async()
             .await;
 
-        let cfg = create_test_config(&server.url());
+        let (_temp_config_dir, cfg) = create_test_config(&server.url());
         let client = Client::new(cfg).unwrap();
 
         // Create test files
@@ -265,7 +283,7 @@ mod http_tests {
             .create_async()
             .await;
 
-        let cfg = create_test_config(&server.url());
+        let (_temp_config_dir, cfg) = create_test_config(&server.url());
         let client = Client::new(cfg).unwrap();
 
         let (_temp_dir1, file1) = create_test_file("success.pdf");
