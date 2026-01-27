@@ -3,6 +3,7 @@ use log::LevelFilter;
 use reqwest::StatusCode;
 use std::fs;
 use std::path::PathBuf;
+use tempfile::TempDir;
 
 /// Sets up the test logger to capture log output during tests.
 fn setup_logger() {
@@ -102,11 +103,13 @@ mod http_tests {
         cfg
     }
 
-    /// Helper function to create a test file and return its path
-    fn create_test_file(filename: &str) -> PathBuf {
-        let file_path = PathBuf::from(filename);
+    /// Helper function to create a test file in a temporary directory
+    /// Returns both the TempDir (which must be kept alive) and the file path
+    fn create_test_file(filename: &str) -> (TempDir, PathBuf) {
+        let temp_dir = TempDir::new().unwrap();
+        let file_path = temp_dir.path().join(filename);
         fs::File::create(&file_path).unwrap();
-        file_path
+        (temp_dir, file_path)
     }
 
     #[tokio::test]
@@ -124,7 +127,7 @@ mod http_tests {
         let cfg = create_test_config(&_s.url());
         let client = Client::new(cfg).unwrap();
 
-        let file_path = create_test_file("test_file.txt");
+        let (_temp_dir, file_path) = create_test_file("test_file.txt");
         let files = vec![file_path.clone()];
 
         let result = client.upload_files(&files).await;
@@ -133,10 +136,6 @@ mod http_tests {
         assert_eq!(uploaded.len(), 1);
         assert_eq!(uploaded[0], file_path);
         _m.assert();
-
-        // Delete the test file if possible
-        // Ignore any errors
-        let _ = fs::remove_file(file_path);
     }
 
     #[tokio::test]
@@ -171,7 +170,7 @@ mod http_tests {
         let cfg = create_test_config(&_s.url());
         let client = Client::new(cfg).unwrap();
 
-        let file_path = create_test_file("test_file.txt");
+        let (_temp_dir, file_path) = create_test_file("test_file.txt");
         let files = vec![file_path.clone()];
 
         let result = client.upload_files(&files).await;
@@ -180,10 +179,6 @@ mod http_tests {
         let uploaded = result.unwrap();
         assert_eq!(uploaded.len(), 0);
         _m.assert();
-
-        // Delete the test file if possible
-        // Ignore any errors
-        let _ = fs::remove_file(file_path);
     }
 
     #[tokio::test]
@@ -201,7 +196,7 @@ mod http_tests {
         let cfg = create_test_config(&_s.url());
         let client = Client::new(cfg).unwrap();
 
-        let file_path = create_test_file("test_file.txt");
+        let (_temp_dir, file_path) = create_test_file("test_file.txt");
         let files = vec![file_path.clone()];
 
         let result = client.upload_files(&files).await;
@@ -210,10 +205,6 @@ mod http_tests {
         let uploaded = result.unwrap();
         assert_eq!(uploaded.len(), 0);
         _m.assert();
-
-        // Delete the test file if possible
-        // Ignore any errors
-        let _ = fs::remove_file(file_path);
     }
 
     #[tokio::test]
@@ -233,8 +224,8 @@ mod http_tests {
         let client = Client::new(cfg).unwrap();
 
         // Create test files
-        let file1 = create_test_file("test1.pdf");
-        let file2 = create_test_file("test2.pdf");
+        let (_temp_dir1, file1) = create_test_file("test1.pdf");
+        let (_temp_dir2, file2) = create_test_file("test2.pdf");
         let files = vec![file1.clone(), file2.clone()];
 
         // Test: Upload files in parallel
@@ -247,10 +238,6 @@ mod http_tests {
         assert!(uploaded.contains(&file1));
         assert!(uploaded.contains(&file2));
         mock.assert_async().await;
-
-        // Cleanup
-        let _ = fs::remove_file(file1);
-        let _ = fs::remove_file(file2);
     }
 
     #[tokio::test]
@@ -281,8 +268,8 @@ mod http_tests {
         let cfg = create_test_config(&server.url());
         let client = Client::new(cfg).unwrap();
 
-        let file1 = create_test_file("success.pdf");
-        let file2 = create_test_file("fail.pdf");
+        let (_temp_dir1, file1) = create_test_file("success.pdf");
+        let (_temp_dir2, file2) = create_test_file("fail.pdf");
         let files = vec![file1.clone(), file2.clone()];
 
         // Test: One file fails, batch continues
@@ -299,9 +286,5 @@ mod http_tests {
         // Verify both mocks were called
         mock_success.assert_async().await;
         mock_fail.assert_async().await;
-
-        // Cleanup
-        let _ = fs::remove_file(file1);
-        let _ = fs::remove_file(file2);
     }
 }
