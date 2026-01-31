@@ -18,6 +18,26 @@ pub struct Client {
     http: reqwest::Client,
 }
 
+/// Statistics collected during the upload operation.
+///
+/// Tracks counts for all file operations performed during the upload process,
+/// including successful and failed uploads, filtered files, and post-upload
+/// operations like archival and deletion.
+pub struct UploadStatistics {
+    /// Total number of files found matching the filter criteria
+    pub total_found: usize,
+    /// Number of files successfully uploaded
+    pub uploaded_successfully: usize,
+    /// Number of files that failed to upload
+    pub upload_failed: usize,
+    /// Number of files skipped (filtered out)
+    pub skipped: usize,
+    /// Number of files successfully archived
+    pub archived: usize,
+    /// Number of files successfully deleted
+    pub deleted: usize,
+}
+
 impl Client {
     /// Creates a new `Client` with the given `Config`.
     ///
