@@ -38,6 +38,23 @@ pub struct UploadStatistics {
     pub deleted: usize,
 }
 
+/// Displays a summary of the upload operation statistics.
+///
+/// Logs a formatted summary of all file operations performed during the upload,
+/// including files found, uploaded, failed, archived, and deleted.
+///
+/// # Arguments
+///
+/// * `stats` - Reference to the upload statistics to display
+fn display_summary(stats: &UploadStatistics) {
+    info!("Upload Summary:");
+    info!("  Total files found: {}", stats.total_found);
+    info!("  Successfully uploaded: {}", stats.uploaded_successfully);
+    info!("  Failed uploads: {}", stats.upload_failed);
+    info!("  Files archived: {}", stats.archived);
+    info!("  Files deleted: {}", stats.deleted);
+}
+
 impl Client {
     /// Creates a new `Client` with the given `Config`.
     ///
@@ -144,13 +161,7 @@ impl Client {
             stats.deleted = deleted_count;
         }
 
-        // Display summary
-        info!("Upload Summary:");
-        info!("  Total files found: {}", stats.total_found);
-        info!("  Successfully uploaded: {}", stats.uploaded_successfully);
-        info!("  Failed uploads: {}", stats.upload_failed);
-        info!("  Files archived: {}", stats.archived);
-        info!("  Files deleted: {}", stats.deleted);
+        display_summary(&stats);
 
         Ok(())
     }
