@@ -49,4 +49,7 @@ pub enum CmdError {
 
     #[error("Invalid file path: {0}")]
     InvalidFilePath(String),
+
+    #[error("Invalid endpoint URL: {0}")]
+    InvalidUrl(String),
 }

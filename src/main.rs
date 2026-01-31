@@ -3,7 +3,7 @@ mod cmd;
 use cmd::config::Config;
 use cmd::input::{get_endpoint_by_prompt, get_token_by_prompt};
 use cmd::logger::setup_logging;
-use cmd::url_validator::validate_endpoint_security;
+use cmd::url_validator::{validate_endpoint_format, validate_endpoint_security};
 
 use clap::{Parser, Subcommand};
 use log::{debug, error, info, warn};
@@ -121,6 +121,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
 ///
 /// Returns an error if:
 /// - Endpoint prompt fails
+/// - Endpoint format validation fails
+/// - Endpoint security validation fails (unless --allow-insecure is specified)
 /// - Token prompt fails
 /// - Configuration save fails
 fn init(
@@ -141,6 +143,12 @@ fn init(
                 return Err(e);
             }
         }
+    }
+
+    // Validate endpoint format
+    if let Err(e) = validate_endpoint_format(&cfg.public_config.endpoint) {
+        error!("{e}");
+        return Err(e.into());
     }
 
     // Validate endpoint security
