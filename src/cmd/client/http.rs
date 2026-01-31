@@ -51,6 +51,7 @@ fn display_summary(stats: &UploadStatistics) {
     info!("  Total files found: {}", stats.total_found);
     info!("  Successfully uploaded: {}", stats.uploaded_successfully);
     info!("  Failed uploads: {}", stats.upload_failed);
+    info!("  Files skipped: {}", stats.skipped);
     info!("  Files archived: {}", stats.archived);
     info!("  Files deleted: {}", stats.deleted);
 }
@@ -150,10 +151,11 @@ impl Client {
 
         stats.uploaded_successfully = successful_count;
         stats.upload_failed = failed_count;
+        stats.skipped = stats.total_found - stats.uploaded_successfully - stats.upload_failed;
 
         if archive {
-            archive_files(&files_to_archive)?;
-            stats.archived = files_to_archive.len();
+            let archived_count = archive_files(&files_to_archive)?;
+            stats.archived = archived_count;
         }
 
         if delete {
