@@ -113,7 +113,17 @@ impl Client {
             return Ok(());
         }
 
-        let (files_to_archive, _successful_count, _failed_count) = match self.upload_files(files).await {
+        // Initialize statistics
+        let mut stats = UploadStatistics {
+            total_found: files.len(),
+            uploaded_successfully: 0,
+            upload_failed: 0,
+            skipped: 0,
+            archived: 0,
+            deleted: 0,
+        };
+
+        let (files_to_archive, successful_count, failed_count) = match self.upload_files(files).await {
             Ok(result) => result,
             Err(e) => {
                 error!("Error uploading files: {e}");
@@ -121,13 +131,26 @@ impl Client {
             }
         };
 
+        stats.uploaded_successfully = successful_count;
+        stats.upload_failed = failed_count;
+
         if archive {
             archive_files(&files_to_archive)?;
+            stats.archived = files_to_archive.len();
         }
 
         if delete {
-            delete_expired_files(files, period)?;
+            let deleted_count = delete_expired_files(files, period)?;
+            stats.deleted = deleted_count;
         }
+
+        // Display summary
+        info!("Upload Summary:");
+        info!("  Total files found: {}", stats.total_found);
+        info!("  Successfully uploaded: {}", stats.uploaded_successfully);
+        info!("  Failed uploads: {}", stats.upload_failed);
+        info!("  Files archived: {}", stats.archived);
+        info!("  Files deleted: {}", stats.deleted);
 
         Ok(())
     }
