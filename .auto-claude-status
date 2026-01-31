@@ -1,0 +1,25 @@
+{
+  "active": true,
+  "spec": "022-add-endpoint-url-validation-in-init-command",
+  "state": "planning",
+  "subtasks": {
+    "completed": 0,
+    "total": 0,
+    "in_progress": 1,
+    "failed": 0
+  },
+  "phase": {
+    "current": "URL Format Validation",
+    "id": null,
+    "total": 3
+  },
+  "workers": {
+    "active": 0,
+    "max": 1
+  },
+  "session": {
+    "number": 2,
+    "started_at": "2026-01-31T11:00:15.359228"
+  },
+  "last_update": "2026-01-31T11:03:38.874619"
+}
