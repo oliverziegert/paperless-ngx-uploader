@@ -113,8 +113,8 @@ impl Client {
             return Ok(());
         }
 
-        let files_to_archive = match self.upload_files(files).await {
-            Ok(files) => files,
+        let (files_to_archive, _successful_count, _failed_count) = match self.upload_files(files).await {
+            Ok(result) => result,
             Err(e) => {
                 error!("Error uploading files: {e}");
                 return Err(e);
@@ -145,7 +145,10 @@ impl Client {
     ///
     /// # Returns
     ///
-    /// Returns a vector of paths for files that were successfully uploaded.
+    /// Returns a tuple containing:
+    /// * A vector of paths for files that were successfully uploaded
+    /// * The count of successful uploads
+    /// * The count of failed uploads
     ///
     /// # Errors
     ///
@@ -154,7 +157,7 @@ impl Client {
     pub(super) async fn upload_files(
         &self,
         files: &[PathBuf],
-    ) -> Result<Vec<PathBuf>, Box<dyn Error>> {
+    ) -> Result<(Vec<PathBuf>, usize, usize), Box<dyn Error>> {
         use std::sync::Arc;
         use tokio::sync::Semaphore;
         use tokio::task::JoinSet;
@@ -182,23 +185,28 @@ impl Client {
 
         // Collect results from all tasks
         let mut files_archived: Vec<PathBuf> = Vec::new();
+        let mut successful_count = 0;
+        let mut failed_count = 0;
         while let Some(result) = set.join_next().await {
             match result {
                 Ok((file, Ok(()))) => {
                     debug!("File uploaded successfully");
                     files_archived.push(file);
+                    successful_count += 1;
                 }
                 Ok((file, Err(e))) => {
                     let file_display = file.display();
                     error!("Error uploading file {file_display}: {e}");
+                    failed_count += 1;
                 }
                 Err(e) => {
                     error!("Task join error: {e}");
+                    failed_count += 1;
                 }
             }
         }
 
-        Ok(files_archived)
+        Ok((files_archived, successful_count, failed_count))
     }
 
     /// Helper method to upload a single file within a spawned task.
