@@ -3,7 +3,7 @@
   "spec": "021-add-upload-summary-with-statistics",
   "state": "building",
   "subtasks": {
-    "completed": 4,
+    "completed": 6,
     "total": 7,
     "in_progress": 1,
     "failed": 0
@@ -18,8 +18,8 @@
     "max": 1
   },
   "session": {
-    "number": 6,
+    "number": 8,
     "started_at": "2026-01-31T11:01:11.586270"
   },
-  "last_update": "2026-01-31T11:10:04.190342"
+  "last_update": "2026-01-31T11:14:31.880767"
 }
