@@ -67,22 +67,29 @@ pub fn aggregate_files(
 /// * `files` - A reference to a vector of `PathBuf` representing the files to be archived.
 /// * `period` - The period in days beyond which files should be archived.
 ///
+/// # Returns
+///
+/// Returns the count of successfully archived files.
+///
 /// # Errors
 ///
 /// Returns an error if any file operation fails during the archiving process.
-#[allow(clippy::unnecessary_wraps)]
-pub fn archive_files(files: &[PathBuf]) -> Result<(), Box<dyn Error>> {
+pub fn archive_files(files: &[PathBuf]) -> Result<usize, Box<dyn Error>> {
     debug!("Starting archive_files");
+    let mut archived_count = 0;
     for file in files {
         let file_display = file.display();
         debug!("Attempting to archive file: {file_display}");
         match archive_file(file) {
-            Ok(()) => debug!("File archived successfully: {file_display}"),
+            Ok(()) => {
+                debug!("File archived successfully: {file_display}");
+                archived_count += 1;
+            }
             Err(e) => error!("Error archiving file {file_display}: {e}"),
         }
     }
-    debug!("Completed archive_files");
-    Ok(())
+    debug!("Completed archive_files with {archived_count} files archived");
+    Ok(archived_count)
 }
 
 /// Archives a single file if it is older than the specified period in days.
