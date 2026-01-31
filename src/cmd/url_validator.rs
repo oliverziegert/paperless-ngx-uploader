@@ -43,8 +43,7 @@ pub fn validate_endpoint_format(endpoint: &str) -> Result<(), CmdError> {
             if scheme != "http" && scheme != "https" {
                 debug!("Invalid URL scheme: {scheme}");
                 return Err(CmdError::InvalidUrl(format!(
-                    "Invalid URL scheme '{}'. Must be 'http://' or 'https://'",
-                    scheme
+                    "Invalid URL scheme '{scheme}'. Must be 'http://' or 'https://'"
                 )));
             }
 
@@ -62,12 +61,12 @@ pub fn validate_endpoint_format(endpoint: &str) -> Result<(), CmdError> {
         Err(e) => {
             debug!("Failed to parse URL: {e}");
             // Provide helpful error message for common mistakes
-            if !endpoint.contains("://") {
+            if endpoint.contains("://") {
+                Err(CmdError::InvalidUrl(format!("Invalid URL format: {e}")))
+            } else {
                 Err(CmdError::InvalidUrl(
                     "URL must include a protocol (e.g., 'http://' or 'https://')".to_string(),
                 ))
-            } else {
-                Err(CmdError::InvalidUrl(format!("Invalid URL format: {}", e)))
             }
         }
     }
@@ -297,8 +296,7 @@ mod tests {
         fn test_valid_url_with_path_and_trailing_slash() {
             setup_logger();
 
-            let result =
-                validate_endpoint_format("https://paperless.example.com/api/documents/");
+            let result = validate_endpoint_format("https://paperless.example.com/api/documents/");
             assert!(result.is_ok());
         }
 
