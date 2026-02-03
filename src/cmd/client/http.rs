@@ -18,6 +18,44 @@ pub struct Client {
     http: reqwest::Client,
 }
 
+/// Statistics collected during the upload operation.
+///
+/// Tracks counts for all file operations performed during the upload process,
+/// including successful and failed uploads, filtered files, and post-upload
+/// operations like archival and deletion.
+pub struct UploadStatistics {
+    /// Total number of files found matching the filter criteria
+    pub total_found: usize,
+    /// Number of files successfully uploaded
+    pub uploaded_successfully: usize,
+    /// Number of files that failed to upload
+    pub upload_failed: usize,
+    /// Number of files skipped (filtered out)
+    pub skipped: usize,
+    /// Number of files successfully archived
+    pub archived: usize,
+    /// Number of files successfully deleted
+    pub deleted: usize,
+}
+
+/// Displays a summary of the upload operation statistics.
+///
+/// Logs a formatted summary of all file operations performed during the upload,
+/// including files found, uploaded, failed, archived, and deleted.
+///
+/// # Arguments
+///
+/// * `stats` - Reference to the upload statistics to display
+fn display_summary(stats: &UploadStatistics) {
+    info!("Upload Summary:");
+    info!("  Total files found: {}", stats.total_found);
+    info!("  Successfully uploaded: {}", stats.uploaded_successfully);
+    info!("  Failed uploads: {}", stats.upload_failed);
+    info!("  Files skipped: {}", stats.skipped);
+    info!("  Files archived: {}", stats.archived);
+    info!("  Files deleted: {}", stats.deleted);
+}
+
 impl Client {
     /// Creates a new `Client` with the given `Config`.
     ///
@@ -93,21 +131,40 @@ impl Client {
             return Ok(());
         }
 
-        let files_to_archive = match self.upload_files(files).await {
-            Ok(files) => files,
-            Err(e) => {
-                error!("Error uploading files: {e}");
-                return Err(e);
-            }
+        // Initialize statistics
+        let mut stats = UploadStatistics {
+            total_found: files.len(),
+            uploaded_successfully: 0,
+            upload_failed: 0,
+            skipped: 0,
+            archived: 0,
+            deleted: 0,
         };
 
+        let (files_to_archive, successful_count, failed_count) =
+            match self.upload_files(files).await {
+                Ok(result) => result,
+                Err(e) => {
+                    error!("Error uploading files: {e}");
+                    return Err(e);
+                }
+            };
+
+        stats.uploaded_successfully = successful_count;
+        stats.upload_failed = failed_count;
+        stats.skipped = stats.total_found - stats.uploaded_successfully - stats.upload_failed;
+
         if archive {
-            archive_files(&files_to_archive)?;
+            let archived_count = archive_files(&files_to_archive);
+            stats.archived = archived_count;
         }
 
         if delete {
-            delete_expired_files(files, period)?;
+            let deleted_count = delete_expired_files(files, period)?;
+            stats.deleted = deleted_count;
         }
+
+        display_summary(&stats);
 
         Ok(())
     }
@@ -125,7 +182,10 @@ impl Client {
     ///
     /// # Returns
     ///
-    /// Returns a vector of paths for files that were successfully uploaded.
+    /// Returns a tuple containing:
+    /// * A vector of paths for files that were successfully uploaded
+    /// * The count of successful uploads
+    /// * The count of failed uploads
     ///
     /// # Errors
     ///
@@ -134,7 +194,7 @@ impl Client {
     pub(super) async fn upload_files(
         &self,
         files: &[PathBuf],
-    ) -> Result<Vec<PathBuf>, Box<dyn Error>> {
+    ) -> Result<(Vec<PathBuf>, usize, usize), Box<dyn Error>> {
         use std::sync::Arc;
         use tokio::sync::Semaphore;
         use tokio::task::JoinSet;
@@ -162,23 +222,28 @@ impl Client {
 
         // Collect results from all tasks
         let mut files_archived: Vec<PathBuf> = Vec::new();
+        let mut successful_count = 0;
+        let mut failed_count = 0;
         while let Some(result) = set.join_next().await {
             match result {
                 Ok((file, Ok(()))) => {
                     debug!("File uploaded successfully");
                     files_archived.push(file);
+                    successful_count += 1;
                 }
                 Ok((file, Err(e))) => {
                     let file_display = file.display();
                     error!("Error uploading file {file_display}: {e}");
+                    failed_count += 1;
                 }
                 Err(e) => {
                     error!("Task join error: {e}");
+                    failed_count += 1;
                 }
             }
         }
 
-        Ok(files_archived)
+        Ok((files_archived, successful_count, failed_count))
     }
 
     /// Helper method to upload a single file within a spawned task.

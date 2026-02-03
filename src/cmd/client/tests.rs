@@ -146,9 +146,11 @@ mod http_tests {
 
         let result = client.upload_files(&files).await;
         assert!(result.is_ok());
-        let uploaded = result.unwrap();
+        let (uploaded, successful_count, failed_count) = result.unwrap();
         assert_eq!(uploaded.len(), 1);
         assert_eq!(uploaded[0], file_path);
+        assert_eq!(successful_count, 1);
+        assert_eq!(failed_count, 0);
         _m.assert();
     }
 
@@ -169,8 +171,10 @@ mod http_tests {
         let result = client.upload_files(&files).await;
         // When a file doesn't exist, upload_files logs the error but returns Ok with empty vec
         assert!(result.is_ok());
-        let uploaded = result.unwrap();
+        let (uploaded, successful_count, failed_count) = result.unwrap();
         assert_eq!(uploaded.len(), 0);
+        assert_eq!(successful_count, 0);
+        assert_eq!(failed_count, 1);
     }
 
     #[tokio::test]
@@ -194,8 +198,10 @@ mod http_tests {
         let result = client.upload_files(&files).await;
         // Server error is logged but upload_files returns Ok with empty vec
         assert!(result.is_ok());
-        let uploaded = result.unwrap();
+        let (uploaded, successful_count, failed_count) = result.unwrap();
         assert_eq!(uploaded.len(), 0);
+        assert_eq!(successful_count, 0);
+        assert_eq!(failed_count, 1);
         _m.assert();
     }
 
@@ -220,8 +226,10 @@ mod http_tests {
         let result = client.upload_files(&files).await;
         // Non-OK status is logged but upload_files returns Ok with empty vec
         assert!(result.is_ok());
-        let uploaded = result.unwrap();
+        let (uploaded, successful_count, failed_count) = result.unwrap();
         assert_eq!(uploaded.len(), 0);
+        assert_eq!(successful_count, 0);
+        assert_eq!(failed_count, 1);
         _m.assert();
     }
 
@@ -251,10 +259,12 @@ mod http_tests {
 
         // Verify: All files uploaded successfully
         assert!(result.is_ok());
-        let uploaded = result.unwrap();
+        let (uploaded, successful_count, failed_count) = result.unwrap();
         assert_eq!(uploaded.len(), 2);
         assert!(uploaded.contains(&file1));
         assert!(uploaded.contains(&file2));
+        assert_eq!(successful_count, 2);
+        assert_eq!(failed_count, 0);
         mock.assert_async().await;
     }
 
@@ -295,11 +305,12 @@ mod http_tests {
 
         // Verify: Result is Ok (no errors thrown)
         assert!(result.is_ok());
-        let uploaded = result.unwrap();
+        let (uploaded, successful_count, failed_count) = result.unwrap();
 
         // One file should succeed (but we can't guarantee which one due to parallel execution)
         // So we just verify that at least one succeeded and at most 2 succeeded
         assert!(uploaded.len() >= 1 && uploaded.len() <= 2);
+        assert_eq!(successful_count + failed_count, 2);
 
         // Verify both mocks were called
         mock_success.assert_async().await;

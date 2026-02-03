@@ -65,24 +65,26 @@ pub fn aggregate_files(
 /// # Arguments
 ///
 /// * `files` - A reference to a vector of `PathBuf` representing the files to be archived.
-/// * `period` - The period in days beyond which files should be archived.
 ///
-/// # Errors
+/// # Returns
 ///
-/// Returns an error if any file operation fails during the archiving process.
-#[allow(clippy::unnecessary_wraps)]
-pub fn archive_files(files: &[PathBuf]) -> Result<(), Box<dyn Error>> {
+/// Returns the count of successfully archived files.
+pub fn archive_files(files: &[PathBuf]) -> usize {
     debug!("Starting archive_files");
+    let mut archived_count = 0;
     for file in files {
         let file_display = file.display();
         debug!("Attempting to archive file: {file_display}");
         match archive_file(file) {
-            Ok(()) => debug!("File archived successfully: {file_display}"),
+            Ok(()) => {
+                debug!("File archived successfully: {file_display}");
+                archived_count += 1;
+            }
             Err(e) => error!("Error archiving file {file_display}: {e}"),
         }
     }
-    debug!("Completed archive_files");
-    Ok(())
+    debug!("Completed archive_files with {archived_count} files archived");
+    archived_count
 }
 
 /// Archives a single file if it is older than the specified period in days.
@@ -133,11 +135,16 @@ fn archive_file(file: &PathBuf) -> Result<(), Box<dyn Error>> {
 /// * `files` - A reference to a vector of `PathBuf` representing the files to be checked.
 /// * `period` - The period in days beyond which files should be deleted.
 ///
+/// # Returns
+///
+/// Returns the count of successfully deleted files.
+///
 /// # Errors
 ///
 /// Logs an error if any file cannot be deleted.
-pub fn delete_expired_files(files: &[PathBuf], period: usize) -> Result<(), Box<dyn Error>> {
+pub fn delete_expired_files(files: &[PathBuf], period: usize) -> Result<usize, Box<dyn Error>> {
     debug!("Called: Client::delete_expired_files");
+    let mut deleted_count = 0;
     // Iterate over each file in the list
     for file in files {
         let file_display = file.display();
@@ -158,12 +165,14 @@ pub fn delete_expired_files(files: &[PathBuf], period: usize) -> Result<(), Box<
                 Ok(()) => {
                     let archived_display = archived_file.display();
                     debug!("File deleted successfully: {archived_display}");
+                    deleted_count += 1;
                 }
                 Err(e) => error!("Error deleting file: {e}"),
             };
         }
     }
-    Ok(())
+    debug!("Completed delete_expired_files with {deleted_count} files deleted");
+    Ok(deleted_count)
 }
 
 /// Deletes a single file if it is older than the specified period in days.
