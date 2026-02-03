@@ -65,16 +65,11 @@ pub fn aggregate_files(
 /// # Arguments
 ///
 /// * `files` - A reference to a vector of `PathBuf` representing the files to be archived.
-/// * `period` - The period in days beyond which files should be archived.
 ///
 /// # Returns
 ///
 /// Returns the count of successfully archived files.
-///
-/// # Errors
-///
-/// Returns an error if any file operation fails during the archiving process.
-pub fn archive_files(files: &[PathBuf]) -> Result<usize, Box<dyn Error>> {
+pub fn archive_files(files: &[PathBuf]) -> usize {
     debug!("Starting archive_files");
     let mut archived_count = 0;
     for file in files {
@@ -89,7 +84,7 @@ pub fn archive_files(files: &[PathBuf]) -> Result<usize, Box<dyn Error>> {
         }
     }
     debug!("Completed archive_files with {archived_count} files archived");
-    Ok(archived_count)
+    archived_count
 }
 
 /// Archives a single file if it is older than the specified period in days.

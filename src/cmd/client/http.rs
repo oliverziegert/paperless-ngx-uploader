@@ -141,20 +141,21 @@ impl Client {
             deleted: 0,
         };
 
-        let (files_to_archive, successful_count, failed_count) = match self.upload_files(files).await {
-            Ok(result) => result,
-            Err(e) => {
-                error!("Error uploading files: {e}");
-                return Err(e);
-            }
-        };
+        let (files_to_archive, successful_count, failed_count) =
+            match self.upload_files(files).await {
+                Ok(result) => result,
+                Err(e) => {
+                    error!("Error uploading files: {e}");
+                    return Err(e);
+                }
+            };
 
         stats.uploaded_successfully = successful_count;
         stats.upload_failed = failed_count;
         stats.skipped = stats.total_found - stats.uploaded_successfully - stats.upload_failed;
 
         if archive {
-            let archived_count = archive_files(&files_to_archive)?;
+            let archived_count = archive_files(&files_to_archive);
             stats.archived = archived_count;
         }
 
