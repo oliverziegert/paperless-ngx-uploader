@@ -19,16 +19,15 @@ const SECS_PER_DAY: u64 = 60 * 60 * 24;
 /// - If the `file` argument is provided, it adds the file to the vector.
 /// - If the `folder` argument is provided, it reads all entries in the folder
 ///   and adds them to the vector.
-/// - The `filter` argument is a regex pattern used to filter file names.
+/// - The `filter` argument is a pre-compiled regex used to filter file names.
 ///
 /// Returns a vector of `PathBuf` on success, or an error if the folder cannot be read.
 pub fn aggregate_files(
     file: Option<PathBuf>,
     folder: Option<PathBuf>,
-    filter: &str,
+    filter: &Regex,
 ) -> Result<Vec<PathBuf>, Box<dyn Error>> {
     let mut paths = Vec::new();
-    let regex = Regex::new(filter)?;
 
     if let Some(folder_path) = folder {
         let entries = fs::read_dir(folder_path)?;
@@ -36,7 +35,7 @@ pub fn aggregate_files(
             let entry_path = entry?.path();
             if let Some(file_name) = entry_path.file_name() {
                 if let Some(file_name_str) = file_name.to_str() {
-                    if regex.is_match(file_name_str) {
+                    if filter.is_match(file_name_str) {
                         paths.push(entry_path);
                     }
                 }
@@ -47,7 +46,7 @@ pub fn aggregate_files(
     if let Some(file_path) = file {
         if let Some(file_name) = file_path.file_name() {
             if let Some(file_name_str) = file_name.to_str() {
-                if regex.is_match(file_name_str) {
+                if filter.is_match(file_name_str) {
                     paths.push(file_path);
                 }
             }
