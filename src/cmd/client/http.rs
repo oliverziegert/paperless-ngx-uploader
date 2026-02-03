@@ -2,6 +2,7 @@ use crate::cmd::config::Config;
 use crate::cmd::models::CmdError;
 use http::header;
 use log::{debug, error, info};
+use regex::Regex;
 use reqwest::multipart;
 use std::error::Error;
 use std::fs;
@@ -124,6 +125,7 @@ impl Client {
         delete: bool,
     ) -> Result<(), Box<dyn Error>> {
         debug!("Called: Client::upload");
+        let filter = Regex::new(&filter)?;
         let files = &aggregate_files(file, folder, &filter)?;
 
         if files.is_empty() {

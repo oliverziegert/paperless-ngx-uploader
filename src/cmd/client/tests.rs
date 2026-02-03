@@ -317,3 +317,99 @@ mod http_tests {
         mock_fail.assert_async().await;
     }
 }
+
+#[cfg(test)]
+mod file_ops_tests {
+    use super::*;
+    use crate::cmd::client::file_ops::aggregate_files;
+    use regex::Regex;
+
+    #[test]
+    fn test_aggregate_files_folder_filters_matching_extension() {
+        setup_logger();
+
+        let temp_dir = TempDir::new().unwrap();
+
+        // Create a mix of .pdf and .txt files
+        fs::File::create(temp_dir.path().join("document.pdf")).unwrap();
+        fs::File::create(temp_dir.path().join("notes.txt")).unwrap();
+        fs::File::create(temp_dir.path().join("report.pdf")).unwrap();
+
+        let filter = Regex::new(r"\.pdf$").unwrap();
+        let result = aggregate_files(None, Some(temp_dir.path().to_path_buf()), &filter);
+
+        // Only the two .pdf files should be returned
+        assert!(result.is_ok());
+        let paths = result.unwrap();
+        assert_eq!(paths.len(), 2);
+        for path in &paths {
+            assert_eq!(path.extension().unwrap().to_str().unwrap(), "pdf");
+        }
+    }
+
+    #[test]
+    fn test_aggregate_files_folder_non_matching_pattern() {
+        setup_logger();
+
+        let temp_dir = TempDir::new().unwrap();
+
+        // Create files that do not match the .pdf filter
+        fs::File::create(temp_dir.path().join("notes.txt")).unwrap();
+        fs::File::create(temp_dir.path().join("readme.md")).unwrap();
+
+        let filter = Regex::new(r"\.pdf$").unwrap();
+        let result = aggregate_files(None, Some(temp_dir.path().to_path_buf()), &filter);
+
+        // No files match the filter
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_empty());
+    }
+
+    #[test]
+    fn test_aggregate_files_single_file_matching() {
+        setup_logger();
+
+        let temp_dir = TempDir::new().unwrap();
+        let file_path = temp_dir.path().join("document.pdf");
+        fs::File::create(&file_path).unwrap();
+
+        let filter = Regex::new(r"\.pdf$").unwrap();
+        let result = aggregate_files(Some(file_path.clone()), None, &filter);
+
+        // Single file matches the filter and is included
+        assert!(result.is_ok());
+        let paths = result.unwrap();
+        assert_eq!(paths.len(), 1);
+        assert_eq!(paths[0], file_path);
+    }
+
+    #[test]
+    fn test_aggregate_files_single_file_non_matching() {
+        setup_logger();
+
+        let temp_dir = TempDir::new().unwrap();
+        let file_path = temp_dir.path().join("notes.txt");
+        fs::File::create(&file_path).unwrap();
+
+        let filter = Regex::new(r"\.pdf$").unwrap();
+        let result = aggregate_files(Some(file_path), None, &filter);
+
+        // Single file does not match the filter and is excluded
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_empty());
+    }
+
+    #[test]
+    fn test_aggregate_files_empty_folder() {
+        setup_logger();
+
+        let temp_dir = TempDir::new().unwrap();
+
+        let filter = Regex::new(r"\.pdf$").unwrap();
+        let result = aggregate_files(None, Some(temp_dir.path().to_path_buf()), &filter);
+
+        // Empty folder yields no files
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_empty());
+    }
+}
