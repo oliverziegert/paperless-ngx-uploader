@@ -1,53 +1,58 @@
-use inquire::{Password, Text};
 use log::{debug, error, info};
 use std::error::Error;
+use std::io::{self, Write};
+
+const ENDPOINT_PLACEHOLDER: &str = "https://paperless.example.com";
 
 /// Prompts the user to enter a Paperless-ngx endpoint URL.
 ///
-/// Displays an interactive prompt with a placeholder example (<https://paperless.example.com>)
-/// and a security warning recommending HTTPS for production use.
-/// Returns the user's input as a string.
+/// Prints a security help message and displays a prompt with a placeholder
+/// example (`https://paperless.example.com`). If the user presses Enter
+/// without typing anything, the placeholder value is used as the default.
+/// Returns the user's input (or the placeholder) as a string.
 ///
 /// # Errors
 ///
-/// Returns an error if the user cancels the prompt or if input reading fails.
+/// Returns an error if reading from stdin fails or if stdout cannot be flushed.
 pub fn get_endpoint_by_prompt() -> Result<String, Box<dyn Error>> {
     debug!("get_endpoint_by_prompt called");
-    let input = Text::new("Endpoint")
-        .with_placeholder("https://paperless.example.com")
-        .with_help_message("Use HTTPS for secure connections. HTTP is only safe for localhost.")
-        .prompt();
-    match input {
-        Ok(input) => {
-            info!("Endpoint entered: {input}");
-            Ok(input)
-        }
-        Err(e) => {
-            error!("Error getting input: {e}");
-            Err(e.into())
-        }
-    }
+
+    println!("Use HTTPS for secure connections. HTTP is only safe for localhost.");
+    print!("Endpoint [{ENDPOINT_PLACEHOLDER}]: ");
+    io::stdout().flush()?;
+
+    let mut input = String::new();
+    io::stdin().read_line(&mut input)?;
+
+    let endpoint = input.trim().to_string();
+
+    let endpoint = if endpoint.is_empty() {
+        debug!("Empty input; using placeholder default");
+        ENDPOINT_PLACEHOLDER.to_string()
+    } else {
+        endpoint
+    };
+
+    info!("Endpoint entered: {endpoint}");
+    Ok(endpoint)
 }
 
 /// Prompts the user to enter a Paperless-ngx authentication token.
 ///
-/// Displays an interactive password prompt where input is hidden for security.
-/// Returns the user's input as a string.
+/// Displays a password prompt where input is hidden for security using
+/// [`rpassword`]. Returns the user's input as a string.
 ///
 /// # Errors
 ///
-/// Returns an error if the user cancels the prompt or if input reading fails.
+/// Returns an error if reading the password from the terminal fails.
 pub fn get_token_by_prompt() -> Result<String, Box<dyn Error>> {
     debug!("get_token_by_prompt called");
-    let input = Password::new("Token").prompt();
-    match input {
-        Ok(input) => {
-            info!("Token entered successfully");
-            Ok(input)
-        }
-        Err(e) => {
-            error!("Error getting input: {e}");
-            Err(e.into())
-        }
-    }
+
+    let token = rpassword::prompt_password("Token: ").map_err(|e| {
+        error!("Error getting input: {e}");
+        e
+    })?;
+
+    info!("Token entered successfully");
+    Ok(token)
 }
