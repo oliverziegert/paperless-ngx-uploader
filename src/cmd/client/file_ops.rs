@@ -19,24 +19,32 @@ const SECS_PER_DAY: u64 = 60 * 60 * 24;
 /// - If the `file` argument is provided, it adds the file to the vector.
 /// - If the `folder` argument is provided, it reads all entries in the folder
 ///   and adds them to the vector.
+/// - If `recursive` is true, subdirectories will be traversed recursively.
 /// - The `filter` argument is a pre-compiled regex used to filter file names.
 ///
 /// Returns a vector of `PathBuf` on success, or an error if the folder cannot be read.
 pub fn aggregate_files(
     file: Option<PathBuf>,
     folder: Option<PathBuf>,
+    recursive: bool,
     filter: &Regex,
 ) -> Result<Vec<PathBuf>, Box<dyn Error>> {
     let mut paths = Vec::new();
 
     if let Some(folder_path) = folder {
-        let entries = fs::read_dir(folder_path)?;
-        for entry in entries {
-            let entry_path = entry?.path();
-            if let Some(file_name) = entry_path.file_name() {
-                if let Some(file_name_str) = file_name.to_str() {
-                    if filter.is_match(file_name_str) {
-                        paths.push(entry_path);
+        if recursive {
+            collect_files_recursive(&folder_path, filter, &mut paths)?;
+        } else {
+            let entries = fs::read_dir(folder_path)?;
+            for entry in entries {
+                let entry_path = entry?.path();
+                if entry_path.is_file() {
+                    if let Some(file_name) = entry_path.file_name() {
+                        if let Some(file_name_str) = file_name.to_str() {
+                            if filter.is_match(file_name_str) {
+                                paths.push(entry_path);
+                            }
+                        }
                     }
                 }
             }
@@ -54,6 +62,43 @@ pub fn aggregate_files(
     }
 
     Ok(paths)
+}
+
+/// Recursively collects files from a directory and its subdirectories.
+///
+/// This helper function traverses directories recursively, applying the regex filter
+/// to all files found at any depth level.
+///
+/// # Arguments
+///
+/// * `dir` - The directory to traverse
+/// * `filter` - A pre-compiled regex used to filter file names
+/// * `paths` - A mutable vector to collect matching file paths
+///
+/// # Errors
+///
+/// Returns an error if any directory cannot be read.
+fn collect_files_recursive(
+    dir: &PathBuf,
+    filter: &Regex,
+    paths: &mut Vec<PathBuf>,
+) -> Result<(), Box<dyn Error>> {
+    let entries = fs::read_dir(dir)?;
+    for entry in entries {
+        let entry_path = entry?.path();
+        if entry_path.is_dir() {
+            collect_files_recursive(&entry_path, filter, paths)?;
+        } else if entry_path.is_file() {
+            if let Some(file_name) = entry_path.file_name() {
+                if let Some(file_name_str) = file_name.to_str() {
+                    if filter.is_match(file_name_str) {
+                        paths.push(entry_path);
+                    }
+                }
+            }
+        }
+    }
+    Ok(())
 }
 
 /// Archives a list of files based on the provided period.

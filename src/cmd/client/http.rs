@@ -14,6 +14,27 @@ use super::helpers::get_title_from_filename;
 
 const HEADER_AUTH_PREFIX: &str = "Token ";
 
+/// Options for configuring the upload operation.
+///
+/// Groups all upload-related parameters into a single struct for cleaner
+/// function signatures and easier parameter management.
+pub struct UploadOptions {
+    /// Optional path to a single file to upload
+    pub file: Option<PathBuf>,
+    /// Optional path to a folder containing files to upload
+    pub folder: Option<PathBuf>,
+    /// If true, recursively scan subfolders
+    pub recursive: bool,
+    /// Regex pattern to filter file names
+    pub filter: String,
+    /// If true, successfully uploaded files are archived
+    pub archive: bool,
+    /// Number of days after which files are considered expired (used with `delete`)
+    pub period: usize,
+    /// If true, files older than `period` days are deleted
+    pub delete: bool,
+}
+
 pub struct Client {
     pub(super) cfg: Config,
     http: reqwest::Client,
@@ -101,12 +122,7 @@ impl Client {
     ///
     /// # Arguments
     ///
-    /// * `file` - Optional path to a single file to upload
-    /// * `folder` - Optional path to a folder containing files to upload
-    /// * `filter` - Regex pattern to filter file names
-    /// * `archive` - If true, successfully uploaded files are archived
-    /// * `period` - Number of days after which files are considered expired (used with `delete`)
-    /// * `delete` - If true, files older than `period` days are deleted
+    /// * `options` - Upload configuration options (see `UploadOptions`)
     ///
     /// # Errors
     ///
@@ -115,18 +131,10 @@ impl Client {
     /// - File upload fails (network error, authentication failure, server error)
     /// - Archival fails (unable to create archive folder, file move error)
     /// - Deletion fails (unable to delete expired files)
-    pub async fn upload(
-        &self,
-        file: Option<PathBuf>,
-        folder: Option<PathBuf>,
-        filter: String,
-        archive: bool,
-        period: usize,
-        delete: bool,
-    ) -> Result<(), Box<dyn Error>> {
+    pub async fn upload(&self, options: UploadOptions) -> Result<(), Box<dyn Error>> {
         debug!("Called: Client::upload");
-        let filter = Regex::new(&filter)?;
-        let files = &aggregate_files(file, folder, &filter)?;
+        let filter = Regex::new(&options.filter)?;
+        let files = &aggregate_files(options.file, options.folder, options.recursive, &filter)?;
 
         if files.is_empty() {
             info!("No files found. Nothing to do.");
@@ -156,13 +164,13 @@ impl Client {
         stats.upload_failed = failed_count;
         stats.skipped = stats.total_found - stats.uploaded_successfully - stats.upload_failed;
 
-        if archive {
+        if options.archive {
             let archived_count = archive_files(&files_to_archive);
             stats.archived = archived_count;
         }
 
-        if delete {
-            let deleted_count = delete_expired_files(files, period)?;
+        if options.delete {
+            let deleted_count = delete_expired_files(files, options.period)?;
             stats.deleted = deleted_count;
         }
 
