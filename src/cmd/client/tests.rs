@@ -623,3 +623,130 @@ mod file_ops_tests {
         }
     }
 }
+
+#[cfg(test)]
+mod status_tests {
+    use super::*;
+    use crate::cmd::client::http::Client;
+
+    /// Helper function to create a test config for the given mock server URL
+    /// Returns both the TempDir (which must be kept alive) and the Config
+    fn create_test_config(server_url: &str) -> (TempDir, Config) {
+        let temp_dir = TempDir::new().unwrap();
+        let config_path = temp_dir.path().join("config.yaml");
+
+        let mut cfg = Config::default();
+        cfg.private_config.token = "token".to_string();
+        cfg.public_config.endpoint = format!("{}/api/endpoint", server_url);
+        cfg.public_config.path = config_path;
+
+        (temp_dir, cfg)
+    }
+
+    #[tokio::test]
+    async fn test_check_status_success() {
+        setup_logger();
+
+        let mut _s = mockito::Server::new_async().await;
+        let _m = _s
+            .mock("GET", "/api/endpoint/api/")
+            .match_header("Authorization", "Token token")
+            .with_status(StatusCode::OK.as_u16() as usize)
+            .create_async()
+            .await;
+
+        let (_temp_config_dir, cfg) = create_test_config(&_s.url());
+        let client = Client::new(cfg).unwrap();
+
+        let result = client.check_status().await;
+        assert!(result.is_ok());
+        _m.assert();
+    }
+
+    #[tokio::test]
+    async fn test_check_status_unauthorized() {
+        setup_logger();
+
+        let mut _s = mockito::Server::new_async().await;
+        let _m = _s
+            .mock("GET", "/api/endpoint/api/")
+            .match_header("Authorization", "Token token")
+            .with_status(StatusCode::UNAUTHORIZED.as_u16() as usize)
+            .create_async()
+            .await;
+
+        let (_temp_config_dir, cfg) = create_test_config(&_s.url());
+        let client = Client::new(cfg).unwrap();
+
+        let result = client.check_status().await;
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(err.to_string().contains("401"));
+        _m.assert();
+    }
+
+    #[tokio::test]
+    async fn test_check_status_server_error() {
+        setup_logger();
+
+        let mut _s = mockito::Server::new_async().await;
+        let _m = _s
+            .mock("GET", "/api/endpoint/api/")
+            .match_header("Authorization", "Token token")
+            .with_status(StatusCode::INTERNAL_SERVER_ERROR.as_u16() as usize)
+            .create_async()
+            .await;
+
+        let (_temp_config_dir, cfg) = create_test_config(&_s.url());
+        let client = Client::new(cfg).unwrap();
+
+        let result = client.check_status().await;
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(err.to_string().contains("500"));
+        _m.assert();
+    }
+
+    #[tokio::test]
+    async fn test_check_status_not_found() {
+        setup_logger();
+
+        let mut _s = mockito::Server::new_async().await;
+        let _m = _s
+            .mock("GET", "/api/endpoint/api/")
+            .match_header("Authorization", "Token token")
+            .with_status(StatusCode::NOT_FOUND.as_u16() as usize)
+            .create_async()
+            .await;
+
+        let (_temp_config_dir, cfg) = create_test_config(&_s.url());
+        let client = Client::new(cfg).unwrap();
+
+        let result = client.check_status().await;
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(err.to_string().contains("404"));
+        _m.assert();
+    }
+
+    #[tokio::test]
+    async fn test_check_status_connection_error() {
+        setup_logger();
+
+        let temp_dir = TempDir::new().unwrap();
+        let config_path = temp_dir.path().join("config.yaml");
+
+        let mut cfg = Config::default();
+        cfg.private_config.token = "token".to_string();
+        // Use an invalid URL that will fail to connect
+        cfg.public_config.endpoint =
+            "http://invalid-host-that-does-not-exist:9999/api/endpoint".to_string();
+        cfg.public_config.path = config_path;
+
+        let client = Client::new(cfg).unwrap();
+
+        let result = client.check_status().await;
+        // Connection should fail
+        assert!(result.is_err());
+    }
+}

@@ -117,6 +117,51 @@ impl Client {
         Ok(Self { cfg, http: client })
     }
 
+    /// Checks connectivity and authentication with the Paperless-ngx API.
+    ///
+    /// Makes a GET request to the /api/ endpoint to verify that the configured
+    /// endpoint is reachable and the authentication token is valid.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - Network connection fails
+    /// - Authentication fails (401 Unauthorized)
+    /// - Server returns an error status code
+    /// - The API endpoint is not accessible
+    pub async fn check_status(&self) -> Result<(), Box<dyn Error>> {
+        debug!("Called: Client::check_status");
+
+        // Construct the API endpoint URL
+        let api_url = format!("{}/api/", self.cfg.public_config.endpoint.trim_end_matches('/'));
+        debug!("Checking status at: {api_url}");
+
+        // Make GET request to /api/ endpoint
+        let response = match self.http.get(&api_url).send().await {
+            Ok(response) => response,
+            Err(e) => {
+                error!("Failed to connect to Paperless-ngx API: {e}");
+                return Err(e.into());
+            }
+        };
+
+        let status = response.status();
+        debug!("Response status: {status}");
+
+        if status == reqwest::StatusCode::OK {
+            info!("Successfully connected to Paperless-ngx API");
+            info!("Endpoint: {}", self.cfg.public_config.endpoint);
+            info!("Authentication: Valid");
+            Ok(())
+        } else if status == reqwest::StatusCode::UNAUTHORIZED {
+            error!("Authentication failed: Invalid or missing token");
+            Err("Authentication failed: 401 Unauthorized".into())
+        } else {
+            error!("API returned error status: {status}");
+            Err(format!("API returned error status: {status}").into())
+        }
+    }
+
     /// Uploads documents to Paperless-ngx with optional archival and cleanup.
     ///
     /// This method aggregates files from either a single file or a folder, filters
