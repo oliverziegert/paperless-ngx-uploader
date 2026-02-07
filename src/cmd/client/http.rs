@@ -134,7 +134,7 @@ impl Client {
 
         // Construct the API endpoint URL
         let api_url = format!("{}/api/", self.cfg.public_config.endpoint.trim_end_matches('/'));
-        debug!("Checking status at: {}", api_url);
+        debug!("Checking status at: {api_url}");
 
         // Make GET request to /api/ endpoint
         let response = match self.http.get(&api_url).send().await {
@@ -146,7 +146,7 @@ impl Client {
         };
 
         let status = response.status();
-        debug!("Response status: {}", status);
+        debug!("Response status: {status}");
 
         if status == reqwest::StatusCode::OK {
             info!("Successfully connected to Paperless-ngx API");

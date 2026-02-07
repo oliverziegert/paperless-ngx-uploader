@@ -739,7 +739,8 @@ mod status_tests {
         let mut cfg = Config::default();
         cfg.private_config.token = "token".to_string();
         // Use an invalid URL that will fail to connect
-        cfg.public_config.endpoint = "http://invalid-host-that-does-not-exist:9999/api/endpoint".to_string();
+        cfg.public_config.endpoint =
+            "http://invalid-host-that-does-not-exist:9999/api/endpoint".to_string();
         cfg.public_config.path = config_path;
 
         let client = Client::new(cfg).unwrap();
