@@ -219,7 +219,7 @@ pub async fn upload(
     archive: bool,
     period: usize,
     delete: bool,
-    _dry_run: bool,
+    dry_run: bool,
     allow_insecure: bool,
     cfg: Config,
 ) -> Result<(), Box<dyn Error>> {
@@ -254,6 +254,7 @@ pub async fn upload(
             archive,
             period,
             delete,
+            dry_run,
         })
         .await
 }

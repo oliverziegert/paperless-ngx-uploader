@@ -33,6 +33,8 @@ pub struct UploadOptions {
     pub period: usize,
     /// If true, files older than `period` days are deleted
     pub delete: bool,
+    /// If true, simulates upload without making actual changes
+    pub dry_run: bool,
 }
 
 pub struct Client {
