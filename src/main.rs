@@ -149,9 +149,17 @@ async fn main() -> Result<(), Box<dyn Error>> {
             )
             .await
         }
-        Commands::Status { allow_insecure: _ } => {
-            // TODO: Implement status command (subtask-1-4)
-            unimplemented!("Status command will be implemented in subtask-1-4")
+        Commands::Status { allow_insecure } => {
+            // For status, load existing config (must exist)
+            let cfg = match Config::load(cli.config.as_ref()) {
+                Ok(config) => config,
+                Err(e) => {
+                    error!("Error loading config: {e}");
+                    return Err(e.into());
+                }
+            };
+
+            status(allow_insecure, cfg).await
         }
     }
 }
@@ -279,4 +287,38 @@ pub async fn upload(
             dry_run,
         })
         .await
+}
+
+/// Checks connectivity and authentication with Paperless-ngx.
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - Endpoint security validation fails and insecure connections are not allowed
+/// - HTTP client creation fails
+/// - Status check fails (network issues, authentication failure, etc.)
+pub async fn status(allow_insecure: bool, cfg: Config) -> Result<(), Box<dyn Error>> {
+    debug!("Called: status");
+
+    // Validate endpoint security
+    // CLI --allow-insecure overrides config.allow_insecure
+    if let Err(e) = validate_endpoint_security(&cfg.public_config.endpoint) {
+        if allow_insecure || cfg.public_config.allow_insecure {
+            warn!("⚠️  Security Warning: {e}");
+            warn!("Proceeding with insecure connection as allowed by config or --allow-insecure flag.");
+        } else {
+            error!("{e}");
+            return Err(e.into());
+        }
+    }
+
+    let client = match cmd::client::Client::new(cfg) {
+        Ok(client) => client,
+        Err(e) => {
+            error!("Error creating client: {e}");
+            return Err(e.into());
+        }
+    };
+
+    client.check_status().await
 }
