@@ -69,6 +69,10 @@ enum Commands {
         #[arg(long)]
         delete: bool,
 
+        /// Simulate upload without actually sending files
+        #[arg(long)]
+        dry_run: bool,
+
         /// Allow insecure HTTP connections (not recommended for production)
         #[arg(long)]
         allow_insecure: bool,
@@ -112,6 +116,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             archive,
             period,
             delete,
+            dry_run,
             allow_insecure,
         } => {
             // For upload, load existing config (must exist)
@@ -123,7 +128,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 }
             };
 
-            upload(file, folder, recursive, filter, archive, period, delete, allow_insecure, cfg)
+            upload(file, folder, recursive, filter, archive, period, delete, dry_run, allow_insecure, cfg)
                 .await
         }
     }
@@ -214,6 +219,7 @@ pub async fn upload(
     archive: bool,
     period: usize,
     delete: bool,
+    _dry_run: bool,
     allow_insecure: bool,
     cfg: Config,
 ) -> Result<(), Box<dyn Error>> {
