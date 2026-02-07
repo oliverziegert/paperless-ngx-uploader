@@ -120,7 +120,7 @@ impl Client {
         &self,
         file: Option<PathBuf>,
         folder: Option<PathBuf>,
-        _recursive: bool,
+        recursive: bool,
         filter: String,
         archive: bool,
         period: usize,
@@ -128,7 +128,7 @@ impl Client {
     ) -> Result<(), Box<dyn Error>> {
         debug!("Called: Client::upload");
         let filter = Regex::new(&filter)?;
-        let files = &aggregate_files(file, folder, &filter)?;
+        let files = &aggregate_files(file, folder, recursive, &filter)?;
 
         if files.is_empty() {
             info!("No files found. Nothing to do.");

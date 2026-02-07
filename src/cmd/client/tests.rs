@@ -336,7 +336,7 @@ mod file_ops_tests {
         fs::File::create(temp_dir.path().join("report.pdf")).unwrap();
 
         let filter = Regex::new(r"\.pdf$").unwrap();
-        let result = aggregate_files(None, Some(temp_dir.path().to_path_buf()), &filter);
+        let result = aggregate_files(None, Some(temp_dir.path().to_path_buf()), false, &filter);
 
         // Only the two .pdf files should be returned
         assert!(result.is_ok());
@@ -358,7 +358,7 @@ mod file_ops_tests {
         fs::File::create(temp_dir.path().join("readme.md")).unwrap();
 
         let filter = Regex::new(r"\.pdf$").unwrap();
-        let result = aggregate_files(None, Some(temp_dir.path().to_path_buf()), &filter);
+        let result = aggregate_files(None, Some(temp_dir.path().to_path_buf()), false, &filter);
 
         // No files match the filter
         assert!(result.is_ok());
@@ -374,7 +374,7 @@ mod file_ops_tests {
         fs::File::create(&file_path).unwrap();
 
         let filter = Regex::new(r"\.pdf$").unwrap();
-        let result = aggregate_files(Some(file_path.clone()), None, &filter);
+        let result = aggregate_files(Some(file_path.clone()), None, false, &filter);
 
         // Single file matches the filter and is included
         assert!(result.is_ok());
@@ -392,7 +392,7 @@ mod file_ops_tests {
         fs::File::create(&file_path).unwrap();
 
         let filter = Regex::new(r"\.pdf$").unwrap();
-        let result = aggregate_files(Some(file_path), None, &filter);
+        let result = aggregate_files(Some(file_path), None, false, &filter);
 
         // Single file does not match the filter and is excluded
         assert!(result.is_ok());
@@ -406,7 +406,7 @@ mod file_ops_tests {
         let temp_dir = TempDir::new().unwrap();
 
         let filter = Regex::new(r"\.pdf$").unwrap();
-        let result = aggregate_files(None, Some(temp_dir.path().to_path_buf()), &filter);
+        let result = aggregate_files(None, Some(temp_dir.path().to_path_buf()), false, &filter);
 
         // Empty folder yields no files
         assert!(result.is_ok());
