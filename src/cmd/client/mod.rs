@@ -8,5 +8,5 @@ mod http;
 #[cfg(test)]
 mod tests;
 
-// Re-export Client publicly so it can be used from main.rs
-pub use http::Client;
+// Re-export Client and UploadOptions publicly so they can be used from main.rs
+pub use http::{Client, UploadOptions};

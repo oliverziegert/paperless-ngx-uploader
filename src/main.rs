@@ -104,7 +104,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
             init(endpoint, allow_insecure, &mut cfg)
         }
-        Commands::Upload { file, folder, recursive, filter, archive, period, delete, allow_insecure } => {
+        Commands::Upload {
+            file,
+            folder,
+            recursive,
+            filter,
+            archive,
+            period,
+            delete,
+            allow_insecure,
+        } => {
             // For upload, load existing config (must exist)
             let cfg = match Config::load(cli.config.as_ref()) {
                 Ok(config) => config,
@@ -114,7 +123,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 }
             };
 
-            upload(file, folder, recursive, filter, archive, period, delete, allow_insecure, cfg).await
+            upload(file, folder, recursive, filter, archive, period, delete, allow_insecure, cfg)
+                .await
         }
     }
 }
@@ -195,6 +205,7 @@ fn init(
 /// - HTTP client creation fails
 /// - File upload fails
 #[allow(clippy::too_many_arguments)]
+#[allow(clippy::fn_params_excessive_bools)]
 pub async fn upload(
     file: Option<PathBuf>,
     folder: Option<PathBuf>,
@@ -227,5 +238,16 @@ pub async fn upload(
             return Err(e.into());
         }
     };
-    client.upload(file, folder, recursive, filter, archive, period, delete).await
+
+    client
+        .upload(cmd::client::UploadOptions {
+            file,
+            folder,
+            recursive,
+            filter,
+            archive,
+            period,
+            delete,
+        })
+        .await
 }

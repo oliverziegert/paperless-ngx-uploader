@@ -601,22 +601,14 @@ mod file_ops_tests {
         let filter = Regex::new(r"\.pdf$").unwrap();
 
         // Non-recursive scan
-        let non_recursive_result = aggregate_files(
-            None,
-            Some(temp_dir.path().to_path_buf()),
-            false,
-            &filter,
-        );
+        let non_recursive_result =
+            aggregate_files(None, Some(temp_dir.path().to_path_buf()), false, &filter);
         assert!(non_recursive_result.is_ok());
         let non_recursive_files = non_recursive_result.unwrap();
 
         // Recursive scan
-        let recursive_result = aggregate_files(
-            None,
-            Some(temp_dir.path().to_path_buf()),
-            true,
-            &filter,
-        );
+        let recursive_result =
+            aggregate_files(None, Some(temp_dir.path().to_path_buf()), true, &filter);
         assert!(recursive_result.is_ok());
         let recursive_files = recursive_result.unwrap();
 
