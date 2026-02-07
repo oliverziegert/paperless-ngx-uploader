@@ -18,6 +18,7 @@ const HEADER_AUTH_PREFIX: &str = "Token ";
 ///
 /// Groups all upload-related parameters into a single struct for cleaner
 /// function signatures and easier parameter management.
+#[allow(clippy::struct_excessive_bools)]
 pub struct UploadOptions {
     /// Optional path to a single file to upload
     pub file: Option<PathBuf>,
@@ -158,7 +159,7 @@ impl Client {
             info!("Would upload {} files:", files.len());
             for file in files {
                 let title = get_title_from_filename(file);
-                info!("  - {}", title);
+                info!("  - {title}");
             }
             stats.uploaded_successfully = files.len();
 
