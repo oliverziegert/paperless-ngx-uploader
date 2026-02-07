@@ -49,6 +49,10 @@ enum Commands {
         #[arg(long, value_name = "FOLDER")]
         folder: Option<PathBuf>,
 
+        /// Recursively scan subfolders
+        #[arg(long)]
+        recursive: bool,
+
         /// Filename filter to upload
         #[arg(long, value_name = "FILTER", default_value = ".*")]
         filter: String,
@@ -100,7 +104,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
             init(endpoint, allow_insecure, &mut cfg)
         }
-        Commands::Upload { file, folder, filter, archive, period, delete, allow_insecure } => {
+        Commands::Upload { file, folder, recursive, filter, archive, period, delete, allow_insecure } => {
             // For upload, load existing config (must exist)
             let cfg = match Config::load(cli.config.as_ref()) {
                 Ok(config) => config,
@@ -110,7 +114,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 }
             };
 
-            upload(file, folder, filter, archive, period, delete, allow_insecure, cfg).await
+            upload(file, folder, recursive, filter, archive, period, delete, allow_insecure, cfg).await
         }
     }
 }
@@ -194,6 +198,7 @@ fn init(
 pub async fn upload(
     file: Option<PathBuf>,
     folder: Option<PathBuf>,
+    _recursive: bool,
     filter: String,
     archive: bool,
     period: usize,
