@@ -412,4 +412,222 @@ mod file_ops_tests {
         assert!(result.is_ok());
         assert!(result.unwrap().is_empty());
     }
+
+    /// Helper function to create a nested directory structure for testing recursive scanning
+    /// Returns the TempDir (which must be kept alive)
+    fn create_nested_directory_structure() -> TempDir {
+        let temp_dir = TempDir::new().unwrap();
+        let root = temp_dir.path();
+
+        // Create files in root directory
+        fs::File::create(root.join("file1.pdf")).unwrap();
+        fs::File::create(root.join("file2.pdf")).unwrap();
+        fs::File::create(root.join("file3.txt")).unwrap();
+
+        // Create subdirectory with files
+        let subdir1 = root.join("subdir1");
+        fs::create_dir(&subdir1).unwrap();
+        fs::File::create(subdir1.join("file4.pdf")).unwrap();
+        fs::File::create(subdir1.join("file5.txt")).unwrap();
+
+        // Create nested subdirectory with files
+        let subdir2 = subdir1.join("subdir2");
+        fs::create_dir(&subdir2).unwrap();
+        fs::File::create(subdir2.join("file6.pdf")).unwrap();
+        fs::File::create(subdir2.join("file7.txt")).unwrap();
+
+        temp_dir
+    }
+
+    #[test]
+    fn test_aggregate_files_non_recursive_only_root() {
+        setup_logger();
+
+        let temp_dir = create_nested_directory_structure();
+        let filter = Regex::new(r"\.pdf$").unwrap();
+
+        let result = aggregate_files(None, Some(temp_dir.path().to_path_buf()), false, &filter);
+
+        assert!(result.is_ok());
+        let files = result.unwrap();
+        // Should only find files in root directory, not subdirectories
+        assert_eq!(files.len(), 2);
+        assert!(files.iter().any(|f| f.file_name().unwrap() == "file1.pdf"));
+        assert!(files.iter().any(|f| f.file_name().unwrap() == "file2.pdf"));
+        // Should not find files in subdirectories
+        assert!(!files.iter().any(|f| f.file_name().unwrap() == "file4.pdf"));
+        assert!(!files.iter().any(|f| f.file_name().unwrap() == "file6.pdf"));
+    }
+
+    #[test]
+    fn test_aggregate_files_recursive_all_levels() {
+        setup_logger();
+
+        let temp_dir = create_nested_directory_structure();
+        let filter = Regex::new(r"\.pdf$").unwrap();
+
+        let result = aggregate_files(None, Some(temp_dir.path().to_path_buf()), true, &filter);
+
+        assert!(result.is_ok());
+        let files = result.unwrap();
+        // Should find all PDF files in root and all subdirectories
+        assert_eq!(files.len(), 4);
+        assert!(files.iter().any(|f| f.file_name().unwrap() == "file1.pdf"));
+        assert!(files.iter().any(|f| f.file_name().unwrap() == "file2.pdf"));
+        assert!(files.iter().any(|f| f.file_name().unwrap() == "file4.pdf"));
+        assert!(files.iter().any(|f| f.file_name().unwrap() == "file6.pdf"));
+        // Should not find .txt files
+        assert!(!files.iter().any(|f| f.file_name().unwrap() == "file3.txt"));
+        assert!(!files.iter().any(|f| f.file_name().unwrap() == "file5.txt"));
+        assert!(!files.iter().any(|f| f.file_name().unwrap() == "file7.txt"));
+    }
+
+    #[test]
+    fn test_aggregate_files_recursive_with_different_filter() {
+        setup_logger();
+
+        let temp_dir = create_nested_directory_structure();
+        let filter = Regex::new(r"\.txt$").unwrap();
+
+        let result = aggregate_files(None, Some(temp_dir.path().to_path_buf()), true, &filter);
+
+        assert!(result.is_ok());
+        let files = result.unwrap();
+        // Should find all TXT files recursively
+        assert_eq!(files.len(), 3);
+        assert!(files.iter().any(|f| f.file_name().unwrap() == "file3.txt"));
+        assert!(files.iter().any(|f| f.file_name().unwrap() == "file5.txt"));
+        assert!(files.iter().any(|f| f.file_name().unwrap() == "file7.txt"));
+    }
+
+    #[test]
+    fn test_aggregate_files_recursive_empty_subdirectories() {
+        setup_logger();
+
+        let temp_dir = TempDir::new().unwrap();
+        let root = temp_dir.path();
+
+        // Create empty subdirectories
+        fs::create_dir(root.join("subdir1")).unwrap();
+        fs::create_dir(root.join("subdir2")).unwrap();
+        fs::create_dir(root.join("subdir1").join("subdir3")).unwrap();
+
+        let filter = Regex::new(r"\.pdf$").unwrap();
+
+        let result = aggregate_files(None, Some(temp_dir.path().to_path_buf()), true, &filter);
+
+        assert!(result.is_ok());
+        let files = result.unwrap();
+        // No files should be found in empty directories
+        assert_eq!(files.len(), 0);
+    }
+
+    #[test]
+    fn test_aggregate_files_recursive_no_matching_files() {
+        setup_logger();
+
+        let temp_dir = create_nested_directory_structure();
+        let filter = Regex::new(r"\.docx$").unwrap();
+
+        let result = aggregate_files(None, Some(temp_dir.path().to_path_buf()), true, &filter);
+
+        assert!(result.is_ok());
+        let files = result.unwrap();
+        // No .docx files should be found
+        assert_eq!(files.len(), 0);
+    }
+
+    #[test]
+    fn test_aggregate_files_recursive_with_single_file() {
+        setup_logger();
+
+        let temp_dir = create_nested_directory_structure();
+
+        // Create a separate temp dir for the single file to avoid duplication
+        let temp_dir2 = TempDir::new().unwrap();
+        let file_path = temp_dir2.path().join("extra.pdf");
+        fs::File::create(&file_path).unwrap();
+
+        let filter = Regex::new(r"\.pdf$").unwrap();
+
+        let result = aggregate_files(
+            Some(file_path.clone()),
+            Some(temp_dir.path().to_path_buf()),
+            true,
+            &filter,
+        );
+
+        assert!(result.is_ok());
+        let files = result.unwrap();
+        // Should find 4 PDFs recursively + 1 specific file
+        assert_eq!(files.len(), 5);
+        assert!(files.contains(&file_path));
+    }
+
+    #[test]
+    fn test_aggregate_files_recursive_only_deep_nested_files() {
+        setup_logger();
+
+        let temp_dir = TempDir::new().unwrap();
+        let root = temp_dir.path();
+
+        // Create empty root and first level subdirectory
+        let subdir1 = root.join("subdir1");
+        fs::create_dir(&subdir1).unwrap();
+
+        // Create files only in deeply nested directory
+        let subdir2 = subdir1.join("subdir2");
+        fs::create_dir(&subdir2).unwrap();
+        fs::File::create(subdir2.join("deep1.pdf")).unwrap();
+        fs::File::create(subdir2.join("deep2.pdf")).unwrap();
+
+        let filter = Regex::new(r"\.pdf$").unwrap();
+
+        let result = aggregate_files(None, Some(temp_dir.path().to_path_buf()), true, &filter);
+
+        assert!(result.is_ok());
+        let files = result.unwrap();
+        // Should find files in deeply nested directory
+        assert_eq!(files.len(), 2);
+        assert!(files.iter().any(|f| f.file_name().unwrap() == "deep1.pdf"));
+        assert!(files.iter().any(|f| f.file_name().unwrap() == "deep2.pdf"));
+    }
+
+    #[test]
+    fn test_aggregate_files_recursive_vs_non_recursive_comparison() {
+        setup_logger();
+
+        let temp_dir = create_nested_directory_structure();
+        let filter = Regex::new(r"\.pdf$").unwrap();
+
+        // Non-recursive scan
+        let non_recursive_result = aggregate_files(
+            None,
+            Some(temp_dir.path().to_path_buf()),
+            false,
+            &filter,
+        );
+        assert!(non_recursive_result.is_ok());
+        let non_recursive_files = non_recursive_result.unwrap();
+
+        // Recursive scan
+        let recursive_result = aggregate_files(
+            None,
+            Some(temp_dir.path().to_path_buf()),
+            true,
+            &filter,
+        );
+        assert!(recursive_result.is_ok());
+        let recursive_files = recursive_result.unwrap();
+
+        // Recursive should find more files than non-recursive
+        assert!(recursive_files.len() > non_recursive_files.len());
+        assert_eq!(non_recursive_files.len(), 2); // Only root level
+        assert_eq!(recursive_files.len(), 4); // Root + subdirectories
+
+        // All non-recursive files should be included in recursive results
+        for file in &non_recursive_files {
+            assert!(recursive_files.contains(file));
+        }
+    }
 }
