@@ -77,6 +77,13 @@ enum Commands {
         #[arg(long)]
         allow_insecure: bool,
     },
+
+    /// Checks connectivity and authentication with Paperless-ngx
+    Status {
+        /// Allow insecure HTTP connections (not recommended for production)
+        #[arg(long)]
+        allow_insecure: bool,
+    },
 }
 
 #[tokio::main]
@@ -141,6 +148,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 cfg,
             )
             .await
+        }
+        Commands::Status { allow_insecure: _ } => {
+            // TODO: Implement status command (subtask-1-4)
+            unimplemented!("Status command will be implemented in subtask-1-4")
         }
     }
 }
