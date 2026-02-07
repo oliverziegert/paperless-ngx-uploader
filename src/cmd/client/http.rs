@@ -153,27 +153,48 @@ impl Client {
             deleted: 0,
         };
 
-        let (files_to_archive, successful_count, failed_count) =
-            match self.upload_files(files).await {
-                Ok(result) => result,
-                Err(e) => {
-                    error!("Error uploading files: {e}");
-                    return Err(e);
-                }
-            };
+        if options.dry_run {
+            info!("DRY RUN MODE - No actual changes will be made");
+            info!("Would upload {} files:", files.len());
+            for file in files {
+                let title = get_title_from_filename(file);
+                info!("  - {}", title);
+            }
+            stats.uploaded_successfully = files.len();
 
-        stats.uploaded_successfully = successful_count;
-        stats.upload_failed = failed_count;
-        stats.skipped = stats.total_found - stats.uploaded_successfully - stats.upload_failed;
+            if options.archive {
+                info!("Would archive {} files after successful upload", files.len());
+                stats.archived = files.len();
+            }
 
-        if options.archive {
-            let archived_count = archive_files(&files_to_archive);
-            stats.archived = archived_count;
-        }
+            if options.delete {
+                info!("Would delete files older than {} days", options.period);
+                // In dry-run mode, we don't actually check which files would be deleted
+                // to avoid complexity, just note that the operation would run
+            }
+        } else {
+            let (files_to_archive, successful_count, failed_count) =
+                match self.upload_files(files).await {
+                    Ok(result) => result,
+                    Err(e) => {
+                        error!("Error uploading files: {e}");
+                        return Err(e);
+                    }
+                };
 
-        if options.delete {
-            let deleted_count = delete_expired_files(files, options.period)?;
-            stats.deleted = deleted_count;
+            stats.uploaded_successfully = successful_count;
+            stats.upload_failed = failed_count;
+            stats.skipped = stats.total_found - stats.uploaded_successfully - stats.upload_failed;
+
+            if options.archive {
+                let archived_count = archive_files(&files_to_archive);
+                stats.archived = archived_count;
+            }
+
+            if options.delete {
+                let deleted_count = delete_expired_files(files, options.period)?;
+                stats.deleted = deleted_count;
+            }
         }
 
         display_summary(&stats);
