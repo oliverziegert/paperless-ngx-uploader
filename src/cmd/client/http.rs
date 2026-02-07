@@ -103,6 +103,7 @@ impl Client {
     ///
     /// * `file` - Optional path to a single file to upload
     /// * `folder` - Optional path to a folder containing files to upload
+    /// * `recursive` - If true, recursively scan subfolders
     /// * `filter` - Regex pattern to filter file names
     /// * `archive` - If true, successfully uploaded files are archived
     /// * `period` - Number of days after which files are considered expired (used with `delete`)
@@ -119,6 +120,7 @@ impl Client {
         &self,
         file: Option<PathBuf>,
         folder: Option<PathBuf>,
+        _recursive: bool,
         filter: String,
         archive: bool,
         period: usize,

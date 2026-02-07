@@ -198,7 +198,7 @@ fn init(
 pub async fn upload(
     file: Option<PathBuf>,
     folder: Option<PathBuf>,
-    _recursive: bool,
+    recursive: bool,
     filter: String,
     archive: bool,
     period: usize,
@@ -227,5 +227,5 @@ pub async fn upload(
             return Err(e.into());
         }
     };
-    client.upload(file, folder, filter, archive, period, delete).await
+    client.upload(file, folder, recursive, filter, archive, period, delete).await
 }
