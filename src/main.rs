@@ -128,8 +128,19 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 }
             };
 
-            upload(file, folder, recursive, filter, archive, period, delete, dry_run, allow_insecure, cfg)
-                .await
+            upload(
+                file,
+                folder,
+                recursive,
+                filter,
+                archive,
+                period,
+                delete,
+                dry_run,
+                allow_insecure,
+                cfg,
+            )
+            .await
         }
     }
 }
