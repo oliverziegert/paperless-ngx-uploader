@@ -20,7 +20,7 @@ pub fn setup_logging(verbose: u8) {
     // Set custom format with colorized output
     log_builder.format(|buf, record| {
         let level = record.level();
-        let level_str = format!("{:5}", level);
+        let level_str = format!("{level:5}");
 
         let colored_level = match level {
             log::Level::Error => level_str.red().bold(),
