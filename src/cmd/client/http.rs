@@ -1,6 +1,7 @@
 use crate::cmd::config::Config;
 use crate::cmd::models::CmdError;
 use http::header;
+use indicatif::{ProgressBar, ProgressStyle};
 use log::{debug, error, info};
 use regex::Regex;
 use reqwest::multipart;
@@ -299,6 +300,15 @@ impl Client {
             });
         }
 
+        // Initialize progress bar
+        let progress_bar = ProgressBar::new(files.len() as u64);
+        progress_bar.set_style(
+            ProgressStyle::default_bar()
+                .template("[{elapsed_precise}] {bar:40.cyan/blue} {pos}/{len} {msg} (ETA: {eta})")
+                .expect("Failed to set progress bar template")
+                .progress_chars("=>-"),
+        );
+
         // Collect results from all tasks
         let mut files_archived: Vec<PathBuf> = Vec::new();
         let mut successful_count = 0;
@@ -307,20 +317,34 @@ impl Client {
             match result {
                 Ok((file, Ok(()))) => {
                     debug!("File uploaded successfully");
+                    let file_name = file.file_name()
+                        .and_then(|n| n.to_str())
+                        .unwrap_or("unknown");
+                    progress_bar.set_message(format!("Uploaded: {file_name}"));
                     files_archived.push(file);
                     successful_count += 1;
+                    progress_bar.inc(1);
                 }
                 Ok((file, Err(e))) => {
                     let file_display = file.display();
                     error!("Error uploading file {file_display}: {e}");
+                    let file_name = file.file_name()
+                        .and_then(|n| n.to_str())
+                        .unwrap_or("unknown");
+                    progress_bar.set_message(format!("Failed: {file_name}"));
                     failed_count += 1;
+                    progress_bar.inc(1);
                 }
                 Err(e) => {
                     error!("Task join error: {e}");
+                    progress_bar.set_message("Task failed");
                     failed_count += 1;
+                    progress_bar.inc(1);
                 }
             }
         }
+
+        progress_bar.finish_with_message("Upload complete");
 
         Ok((files_archived, successful_count, failed_count))
     }
