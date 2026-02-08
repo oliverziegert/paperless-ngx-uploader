@@ -103,3 +103,7 @@ pub fn get_token_by_prompt() -> Result<String, Box<dyn Error>> {
     info!("Token entered successfully");
     Ok(token)
 }
+
+#[cfg(test)]
+#[path = "input_tests.rs"]
+mod tests;
