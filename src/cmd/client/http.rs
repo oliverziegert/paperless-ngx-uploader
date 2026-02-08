@@ -305,7 +305,7 @@ impl Client {
         progress_bar.set_style(
             ProgressStyle::default_bar()
                 .template("[{elapsed_precise}] {bar:40.cyan/blue} {pos}/{len} {msg} (ETA: {eta})")
-                .expect("Failed to set progress bar template")
+                .unwrap_or_else(|_| ProgressStyle::default_bar())
                 .progress_chars("=>-"),
         );
 
