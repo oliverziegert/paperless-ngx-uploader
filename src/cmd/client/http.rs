@@ -79,14 +79,11 @@ fn display_summary(stats: &UploadStatistics) {
     let header = "Upload Summary Report".bold().cyan();
 
     println!("\n{}", separator.cyan());
-    println!("{:^55}", header);
+    println!("{header:^55}");
     println!("{}", separator.cyan());
 
     // Total files found (blue)
-    println!(
-        "  Total files found:       {}",
-        stats.total_found.to_string().blue().bold()
-    );
+    println!("  Total files found:       {}", stats.total_found.to_string().blue().bold());
 
     // Successfully uploaded (green)
     println!(
