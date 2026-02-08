@@ -1,5 +1,6 @@
 use crate::cmd::config::Config;
 use crate::cmd::models::CmdError;
+use colored::Colorize;
 use http::header;
 use indicatif::{ProgressBar, ProgressStyle};
 use log::{debug, error, info};
@@ -68,18 +69,64 @@ pub struct UploadStatistics {
 ///
 /// Logs a formatted summary of all file operations performed during the upload,
 /// including files found, uploaded, failed, archived, and deleted.
+/// Uses colored output to highlight different types of statistics.
 ///
 /// # Arguments
 ///
 /// * `stats` - Reference to the upload statistics to display
 fn display_summary(stats: &UploadStatistics) {
-    info!("Upload Summary:");
-    info!("  Total files found: {}", stats.total_found);
-    info!("  Successfully uploaded: {}", stats.uploaded_successfully);
-    info!("  Failed uploads: {}", stats.upload_failed);
-    info!("  Files skipped: {}", stats.skipped);
-    info!("  Files archived: {}", stats.archived);
-    info!("  Files deleted: {}", stats.deleted);
+    let separator = "═".repeat(55);
+    let header = "Upload Summary Report".bold().cyan();
+
+    println!("\n{}", separator.cyan());
+    println!("{:^55}", header);
+    println!("{}", separator.cyan());
+
+    // Total files found (blue)
+    println!(
+        "  Total files found:       {}",
+        stats.total_found.to_string().blue().bold()
+    );
+
+    // Successfully uploaded (green)
+    println!(
+        "  Successfully uploaded:   {}",
+        stats.uploaded_successfully.to_string().green().bold()
+    );
+
+    // Failed uploads (red if > 0, otherwise dimmed)
+    let failed_str = if stats.upload_failed > 0 {
+        stats.upload_failed.to_string().red().bold()
+    } else {
+        stats.upload_failed.to_string().dimmed()
+    };
+    println!("  Failed uploads:          {failed_str}");
+
+    // Files skipped (yellow if > 0, otherwise dimmed)
+    let skipped_str = if stats.skipped > 0 {
+        stats.skipped.to_string().yellow()
+    } else {
+        stats.skipped.to_string().dimmed()
+    };
+    println!("  Files skipped:           {skipped_str}");
+
+    // Files archived (cyan if > 0, otherwise dimmed)
+    let archived_str = if stats.archived > 0 {
+        stats.archived.to_string().cyan()
+    } else {
+        stats.archived.to_string().dimmed()
+    };
+    println!("  Files archived:          {archived_str}");
+
+    // Files deleted (white if > 0, otherwise dimmed)
+    let deleted_str = if stats.deleted > 0 {
+        stats.deleted.to_string().white()
+    } else {
+        stats.deleted.to_string().dimmed()
+    };
+    println!("  Files deleted:           {deleted_str}");
+
+    println!("{}\n", separator.cyan());
 }
 
 impl Client {
