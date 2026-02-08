@@ -46,35 +46,27 @@ pub fn get_endpoint_by_prompt() -> Result<String, Box<dyn Error>> {
 
         // Validate endpoint format
         if let Err(e) = validate_endpoint_format(&endpoint) {
-            match e {
-                CmdError::InvalidUrl(msg) => {
-                    error!("Invalid endpoint format: {msg}");
-                    eprintln!("Error: {msg}");
-                    eprintln!("Please try again.\n");
-                    continue;
-                }
-                _ => {
-                    error!("Unexpected error during format validation: {e}");
-                    return Err(Box::new(e));
-                }
+            if let CmdError::InvalidUrl(msg) = e {
+                error!("Invalid endpoint format: {msg}");
+                eprintln!("Error: {msg}");
+                eprintln!("Please try again.\n");
+                continue;
             }
+            error!("Unexpected error during format validation: {e}");
+            return Err(Box::new(e));
         }
 
         // Validate endpoint security
         if let Err(e) = validate_endpoint_security(&endpoint) {
-            match e {
-                CmdError::InsecureConnection(url) => {
-                    error!("Insecure connection to: {url}");
-                    eprintln!("Error: Insecure HTTP connection to {url}.");
-                    eprintln!("Use HTTPS for secure connections, or use localhost for development.");
-                    eprintln!("Please try again.\n");
-                    continue;
-                }
-                _ => {
-                    error!("Unexpected error during security validation: {e}");
-                    return Err(Box::new(e));
-                }
+            if let CmdError::InsecureConnection(url) = e {
+                error!("Insecure connection to: {url}");
+                eprintln!("Error: Insecure HTTP connection to {url}.");
+                eprintln!("Use HTTPS for secure connections, or use localhost for development.");
+                eprintln!("Please try again.\n");
+                continue;
             }
+            error!("Unexpected error during security validation: {e}");
+            return Err(Box::new(e));
         }
 
         info!("Endpoint entered and validated: {endpoint}");
