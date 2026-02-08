@@ -93,6 +93,8 @@ pub fn get_endpoint_by_prompt() -> Result<String, Box<dyn Error>> {
 pub fn get_token_by_prompt() -> Result<String, Box<dyn Error>> {
     debug!("get_token_by_prompt called");
 
+    println!("Find your token in Paperless-ngx Settings > API. Input will be hidden.");
+
     let token = rpassword::prompt_password("Token: ").map_err(|e| {
         error!("Error getting input: {e}");
         e
