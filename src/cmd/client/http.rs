@@ -317,9 +317,7 @@ impl Client {
             match result {
                 Ok((file, Ok(()))) => {
                     debug!("File uploaded successfully");
-                    let file_name = file.file_name()
-                        .and_then(|n| n.to_str())
-                        .unwrap_or("unknown");
+                    let file_name = file.file_name().and_then(|n| n.to_str()).unwrap_or("unknown");
                     progress_bar.set_message(format!("Uploaded: {file_name}"));
                     files_archived.push(file);
                     successful_count += 1;
@@ -328,9 +326,7 @@ impl Client {
                 Ok((file, Err(e))) => {
                     let file_display = file.display();
                     error!("Error uploading file {file_display}: {e}");
-                    let file_name = file.file_name()
-                        .and_then(|n| n.to_str())
-                        .unwrap_or("unknown");
+                    let file_name = file.file_name().and_then(|n| n.to_str()).unwrap_or("unknown");
                     progress_bar.set_message(format!("Failed: {file_name}"));
                     failed_count += 1;
                     progress_bar.inc(1);
