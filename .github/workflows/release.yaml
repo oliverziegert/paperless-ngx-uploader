@@ -55,7 +55,7 @@ jobs:
 
             # Update Cargo.toml and Cargo.lock
             cargo bump "$VERSION"
-            cargo fetch --locked
+            cargo update --workspace
 
             # Commit, tag, and push
             git add Cargo.toml Cargo.lock
