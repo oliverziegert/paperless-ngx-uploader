@@ -5,8 +5,9 @@ use std::fs;
 use std::path::PathBuf;
 use tempfile::TempDir;
 
-/// Sets up the test logger to capture log output during tests.
+/// Sets up the test logger and TLS crypto provider for tests.
 fn setup_logger() {
+    let _ = rustls::crypto::ring::default_provider().install_default();
     let _ = env_logger::builder().filter_level(LevelFilter::Debug).is_test(true).try_init();
 }
 

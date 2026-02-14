@@ -88,6 +88,17 @@ enum Commands {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    // Install ring as the default TLS crypto provider.
+    // Reason: ring cross-compiles cleanly to all targets (Linux, macOS, Windows)
+    // unlike the default aws-lc-rs which requires platform-specific C headers.
+    if rustls::crypto::ring::default_provider()
+        .install_default()
+        .is_err()
+    {
+        error!("Failed to install rustls crypto provider");
+        return Err("Failed to install TLS crypto provider".into());
+    }
+
     let cli = Cli::parse();
 
     // Set up logging
