@@ -2,6 +2,8 @@
 # https://docs.cocogitto.io/reference/config.html
 
 tag_prefix = "v"
+from_latest_tag = true
+ignore_merge_commits = true
 
 pre_bump_hooks = [
     "cargo bump {{version}}",
