@@ -31,10 +31,9 @@ jobs:
       - name: Install tools
         run: cargo install cargo-bump
 
-      - name: Install cocogitto
-        uses: cocogitto/cocogitto-action@v4
+      - uses: taiki-e/install-action@v2
         with:
-          install-only: true
+          tool: cocogitto
 
       - name: Determine version and bump
         id: bump
