@@ -5,15 +5,5 @@ tag_prefix = "v"
 from_latest_tag = true
 ignore_merge_commits = true
 
-pre_bump_hooks = [
-    "cargo bump {{version}}",
-    "cargo fetch --locked",
-]
-
-post_bump_hooks = [
-    "git push origin main",
-    "git push origin {{version}}",
-]
-
 [changelog]
 path = "CHANGELOG.md"

@@ -20,30 +20,65 @@ jobs:
     needs: ci
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.release.outputs.version }}
-      bumped: ${{ steps.release.outcome == 'success' }}
+      version: ${{ steps.bump.outputs.version }}
+      bumped: ${{ steps.bump.outputs.bumped }}
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           persist-credentials: true
 
-      - name: Install cargo-bump
+      - name: Install tools
         run: cargo install cargo-bump
 
-      - name: Semver release
-        id: release
+      - name: Install cocogitto
         uses: cocogitto/cocogitto-action@v4
-        continue-on-error: true
         with:
-          command: bump
-          args: --auto
-          git-user: "github-actions[bot]"
-          git-user-email: "41898282+github-actions[bot]@users.noreply.github.com"
+          install-only: true
+
+      - name: Determine version and bump
+        id: bump
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Determine next version from conventional commits since last tag
+          NEXT_VERSION=$(cog bump --auto --dry-run --skip-untracked 2>&1) || true
+          echo "cog dry-run output:"
+          echo "$NEXT_VERSION"
+
+          # Extract version from last line of output (cog may print warnings before)
+          VERSION=$(echo "$NEXT_VERSION" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | tail -1)
+
+          # Check if we got a valid semver version
+          if [ -n "$VERSION" ]; then
+            echo "Bumping to version: $VERSION"
+
+            # Update Cargo.toml and Cargo.lock
+            cargo bump "$VERSION"
+            cargo fetch --locked
+
+            # Commit, tag, and push
+            git add Cargo.toml Cargo.lock
+            git commit -m "chore(release): v$VERSION"
+            git tag "v$VERSION"
+            git push origin main --tags
+
+            echo "version=v$VERSION" >> "$GITHUB_OUTPUT"
+            echo "bumped=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No releasable commits found, skipping bump"
+            echo "bumped=false" >> "$GITHUB_OUTPUT"
+          fi
 
   goreleaser:
     needs: bump
     if: needs.bump.outputs.bumped == 'true'
+    permissions:
+      contents: write
+      packages: write
+      issues: write
+      id-token: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
