@@ -1,3 +1,51 @@
+## 0.2.2 - Enhanced User Experience & Developer Quality
+
+### ✨ New Features
+
+- Add status command for connectivity verification with configured Paperless-ngx instance
+- Add dry-run mode to upload command to preview operations without making changes
+- Add recursive folder scanning option to support nested directory structures
+- Add upload summary report with statistics showing success/failure counts and file details
+
+### 🛠️ Improvements
+
+- Implement visual progress bar for batch uploads using indicatif crate
+- Add colorized terminal output to differentiate success, error, warning, and info messages
+- Enhance interactive prompts with input validation, examples, and contextual help messages
+- Adjust default logging behavior to show meaningful user feedback without verbose flags
+- Add endpoint URL validation during init command to catch common configuration errors
+- Reduce string allocations in `get_title_from_filename()` function
+- Cache compiled regex for file filtering to eliminate redundant compilation
+- Optimize archive folder existence checks in `delete_expired_files()` to avoid redundant operations
+
+### 🔧 Other Changes
+
+- Fix test isolation by using tempfile for all file operations instead of working directory
+- Add CI/CD pipeline with GitHub Actions linting and formatting checks
+- Remove unused `ConfigCommand` enum and `APP_VERSION` constant
+- Evaluate lighter-weight alternatives to inquire crate to reduce binary size
+
+---
+
+## What's Changed
+
+- feat: add status command for connectivity verification
+- feat: add dry-run mode to upload command
+- feat: add recursive folder scanning option
+- feat: add upload summary report with statistics
+- feat: implement visual progress bar for batch uploads
+- feat: add colorized terminal output for status messages
+- feat: enhance interactive prompts with validation and help
+- improvement: adjust default verbose level for user feedback
+- improvement: add endpoint URL validation in init command
+- improvement: reduce string allocations in filename processing
+- improvement: cache compiled regex for file filtering
+- improvement: optimize archive folder existence checks
+- fix: use tempfile for test isolation in client tests
+- ci: add GitHub Actions CI/CD pipeline
+- refactor: remove unused code and dead code paths
+- refactor: evaluate lighter alternatives to inquire crate
+
 ## 0.2.1 - Improved Error Handling and Async Performance
 
 ### ✨ New Features
