@@ -116,7 +116,7 @@ jobs:
             echo "Error: MACOS_SDK_URL secret is not set"
             exit 1
           fi
-          echo "Downloading macOS SDK from: ${MACOS_SDK_URL:0:50}..."
+          echo "Downloading macOS SDK from: ${MACOS_SDK_URL:0:19}..."
           curl -fsSL "$MACOS_SDK_URL" | tar -J -x -C /opt
 
       - uses: goreleaser/goreleaser-action@v6.4.0
@@ -127,6 +127,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_PAT: ${{ secrets.GH_PAT }}
-          SDKROOT: /opt/MacOSX11.3.sdk
+          SDKROOT: /opt/MacOSX26.1.sdk
           GITHUB_REPOSITORY_URL: "${{ github.server_url }}/${{ github.repository }}"
           GITHUB_REPOSITORY: ${{ github.repository }}
