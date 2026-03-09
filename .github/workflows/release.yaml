@@ -89,7 +89,7 @@ jobs:
         uses: mlugg/setup-zig@v2.2.1
 
       - name: cosign-installer
-        uses: sigstore/cosign-installer@v4.0.0
+        uses: sigstore/cosign-installer@v4.1.0
 
       - name: Anchore SBOM Action
         uses: anchore/sbom-action/download-syft@v0.23.0
