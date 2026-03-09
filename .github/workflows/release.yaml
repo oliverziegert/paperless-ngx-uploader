@@ -92,7 +92,7 @@ jobs:
         uses: sigstore/cosign-installer@v4.1.0
 
       - name: Anchore SBOM Action
-        uses: anchore/sbom-action/download-syft@v0.23.0
+        uses: anchore/sbom-action/download-syft@v0.23.1
 
       - name: Docker Setup QEMU
         uses: docker/setup-qemu-action@v4.0.0
