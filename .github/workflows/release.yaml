@@ -119,7 +119,7 @@ jobs:
           echo "Downloading macOS SDK from: ${MACOS_SDK_URL:0:19}..."
           curl -fsSL "$MACOS_SDK_URL" | tar -J -x -C /opt
 
-      - uses: goreleaser/goreleaser-action@v7.2.2
+      - uses: goreleaser/goreleaser-action@v7.2.3
         with:
           distribution: goreleaser
           version: "~> v2"
