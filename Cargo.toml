@@ -12,7 +12,7 @@ dirs = { version = "6.0.0" }
 env_logger = "0.11.8"
 http = "1.4.0"
 indicatif = "0.18"
-keyring = { version = "4.0.0", features = ["apple-native", "linux-native", "windows-native"] }
+keyring-core = "1.0.0"
 log = { version = "0.4.29", features = ["kv"] }
 regex = "1.12.2"
 reqwest = { version = "0.13.0", features = ["multipart", "rustls-no-provider", "http2", "system-proxy", "charset"], default-features = false }
@@ -22,6 +22,18 @@ serde = { version = "1.0.228", features = ["derive"] }
 thiserror = { version = "2.0.17"}
 tokio = { version = "1.48", features = ["full"] }
 url = "2.5"
+
+# Platform-native credential stores for keyring-core (keyring v4 split the
+# platform backends into separate crates; the store is installed in
+# src/cmd/config/keyring.rs)
+[target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]
+apple-native-keyring-store = { version = "1.0.0", features = ["keychain"] }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+windows-native-keyring-store = "1.1.0"
+
+[target.'cfg(all(unix, not(any(target_os = "macos", target_os = "ios", target_os = "android"))))'.dependencies]
+zbus-secret-service-keyring-store = { version = "1.0.0", features = ["crypto-rust"] }
 
 [dev-dependencies]
 mockito = { version = "1.7.1" }
