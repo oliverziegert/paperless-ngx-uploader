@@ -4,14 +4,40 @@ use crate::cmd::models::CmdError;
 use log::LevelFilter;
 use tempfile::TempDir;
 
+/// Serializes tests that touch the keyring token entry.
+///
+/// All keyring tests operate on the same `(APP_NAME, "token")` entry in the
+/// shared mock credential store, so running them in parallel would let one
+/// test observe (or delete) another test's token. Every test that saves,
+/// loads, or deletes the token must hold this lock for its whole duration.
+static KEYRING_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+/// Acquires [`KEYRING_LOCK`], recovering from poisoning.
+///
+/// # Reason: A failed assertion in one keyring test poisons the mutex; the
+/// remaining tests should still run rather than all panicking on the lock.
+fn lock_keyring() -> std::sync::MutexGuard<'static, ()> {
+    KEYRING_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner)
+}
+
 /// Sets up the test logger to capture log output during tests.
 /// Also configures the keyring to use the mock credential store.
 fn setup_logger() {
     let _ = env_logger::builder().filter_level(LevelFilter::Debug).is_test(true).try_init();
 
-    // Set up mock credential store for testing
-    // Use ::keyring to refer to the crate, not the local module
-    ::keyring::set_default_credential_builder(::keyring::mock::default_credential_builder());
+    // Set up mock credential store for testing (keyring-core ships a built-in
+    // mock store since keyring v4). Installed exactly once so parallel tests
+    // share one store and production code never replaces it (see
+    // ensure_default_store in keyring.rs).
+    static INIT_MOCK_STORE: std::sync::Once = std::sync::Once::new();
+    INIT_MOCK_STORE.call_once(|| {
+        // Reason: Store::new() on the mock store is infallible in practice;
+        // if it ever fails the tests cannot run meaningfully anyway.
+        #[allow(clippy::expect_used)]
+        keyring_core::set_default_store(
+            keyring_core::mock::Store::new().expect("failed to create mock credential store"),
+        );
+    });
 }
 
 #[cfg(test)]
@@ -236,16 +262,10 @@ mod private_config_tests {
     use super::*;
 
     /// Test save and load token roundtrip.
-    ///
-    /// Note: This test is ignored by default because the mock credential store in keyring v3.6.2
-    /// doesn't persist data between different Entry::new() calls. Each Entry instance has isolated
-    /// MockData. This test works correctly with real OS keyring backends.
-    ///
-    /// To run this test with real keyring: `cargo test test_save_and_load_token -- --ignored`
     #[test]
-    #[ignore]
     fn test_save_and_load_token() {
         setup_logger();
+        let _guard = lock_keyring();
 
         let test_token = "test_token_12345";
 
@@ -263,16 +283,10 @@ mod private_config_tests {
     }
 
     /// Test delete token operation.
-    ///
-    /// Note: This test is ignored by default because the mock credential store in keyring v3.6.2
-    /// doesn't persist data between different Entry::new() calls. Each Entry instance has isolated
-    /// MockData. This test works correctly with real OS keyring backends.
-    ///
-    /// To run this test with real keyring: `cargo test test_delete_token -- --ignored`
     #[test]
-    #[ignore]
     fn test_delete_token() {
         setup_logger();
+        let _guard = lock_keyring();
 
         let test_token = "delete_test_token";
 
@@ -298,6 +312,7 @@ mod private_config_tests {
     #[test]
     fn test_load_nonexistent_token_fails() {
         setup_logger();
+        let _guard = lock_keyring();
 
         // Try to load a token that doesn't exist in mock store
         let mut config = PrivateConfig { token: String::new() };
@@ -318,16 +333,10 @@ mod config_integration_tests {
     use super::*;
 
     /// Test loading and saving both public and private configs.
-    ///
-    /// Note: This test is ignored by default because the mock credential store in keyring v3.6.2
-    /// doesn't persist data between different Entry::new() calls. Each Entry instance has isolated
-    /// MockData. This test works correctly with real OS keyring backends.
-    ///
-    /// To run this test with real keyring: `cargo test test_config_load_saves_both_configs -- --ignored`
     #[test]
-    #[ignore]
     fn test_config_load_saves_both_configs() {
         setup_logger();
+        let _guard = lock_keyring();
 
         let temp_dir = TempDir::new().unwrap();
         let config_path = temp_dir.path().join("config.yaml");
@@ -359,16 +368,10 @@ mod config_integration_tests {
     }
 
     /// Test config roundtrip (save then load preserves data).
-    ///
-    /// Note: This test is ignored by default because the mock credential store in keyring v3.6.2
-    /// doesn't persist data between different Entry::new() calls. Each Entry instance has isolated
-    /// MockData. This test works correctly with real OS keyring backends.
-    ///
-    /// To run this test with real keyring: `cargo test test_config_roundtrip -- --ignored`
     #[test]
-    #[ignore]
     fn test_config_roundtrip() {
         setup_logger();
+        let _guard = lock_keyring();
 
         let temp_dir = TempDir::new().unwrap();
         let config_path = temp_dir.path().join("config.yaml");
@@ -400,16 +403,10 @@ mod config_integration_tests {
     }
 
     /// Test that delete removes both config file and keyring entry.
-    ///
-    /// Note: This test is ignored by default because the mock credential store in keyring v3.6.2
-    /// doesn't persist data between different Entry::new() calls. Each Entry instance has isolated
-    /// MockData. This test works correctly with real OS keyring backends.
-    ///
-    /// To run this test with real keyring: `cargo test test_config_delete_removes_both -- --ignored`
     #[test]
-    #[ignore]
     fn test_config_delete_removes_both() {
         setup_logger();
+        let _guard = lock_keyring();
 
         let temp_dir = TempDir::new().unwrap();
         let config_path = temp_dir.path().join("config.yaml");
@@ -440,16 +437,10 @@ mod config_integration_tests {
     }
 
     /// Test config with allow_insecure field set to true.
-    ///
-    /// Note: This test is ignored by default because the mock credential store in keyring v3.6.2
-    /// doesn't persist data between different Entry::new() calls. Each Entry instance has isolated
-    /// MockData. This test works correctly with real OS keyring backends.
-    ///
-    /// To run this test with real keyring: `cargo test test_config_with_allow_insecure -- --ignored`
     #[test]
-    #[ignore]
     fn test_config_with_allow_insecure() {
         setup_logger();
+        let _guard = lock_keyring();
 
         let temp_dir = TempDir::new().unwrap();
         let config_path = temp_dir.path().join("config.yaml");
