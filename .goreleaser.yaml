@@ -118,42 +118,28 @@ signs:
     artifacts: checksum
 
 # Create Docker images.
-# We create a manifest below, so here the images need the suffix with the
-# architecture.
-dockers:
-  - image_templates:
-      - "ghcr.io/{{ .Env.GITHUB_REPOSITORY }}:{{ .Tag }}-arm64"
+# Reason: dockers_v2 replaces the deprecated `dockers` + `docker_manifests`
+# combo. A single buildx build produces a multi-arch manifest (and SBOM), so we
+# no longer need per-arch image suffixes or a separate manifest section.
+# See https://goreleaser.com/deprecations#dockers
+dockers_v2:
+  - id: paperless-ngx-uploader
     dockerfile: Dockerfile
-    goarch: arm64
-    use: buildx
-    build_flag_templates:
+    images:
+      - "ghcr.io/{{ .Env.GITHUB_REPOSITORY }}"
+    tags:
+      - "{{ .Tag }}"
+    platforms:
+      - linux/amd64
+      - linux/arm64
+    flags:
       - "--pull"
-      - "--label=org.opencontainers.image.created={{.Date}}"
-      - "--label=org.opencontainers.image.name={{.ProjectName}}"
-      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-      - "--label=org.opencontainers.image.version={{.Version}}"
-      - "--label=org.opencontainers.image.source={{.GitURL}}"
-      - "--platform=linux/arm64"
-  - image_templates:
-      - "ghcr.io/{{ .Env.GITHUB_REPOSITORY }}:{{ .Tag }}-amd64"
-    dockerfile: Dockerfile
-    goarch: amd64
-    use: buildx
-    build_flag_templates:
-      - "--pull"
-      - "--label=org.opencontainers.image.created={{.Date}}"
-      - "--label=org.opencontainers.image.name={{.ProjectName}}"
-      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-      - "--label=org.opencontainers.image.version={{.Version}}"
-      - "--label=org.opencontainers.image.source={{.GitURL}}"
-      - "--platform=linux/amd64"
-
-# Here we join both images into a Docker manifest.
-docker_manifests:
-  - name_template: "ghcr.io/{{ .Env.GITHUB_REPOSITORY }}:{{ .Tag }}"
-    image_templates:
-      - "ghcr.io/{{ .Env.GITHUB_REPOSITORY }}:{{ .Tag }}-arm64"
-      - "ghcr.io/{{ .Env.GITHUB_REPOSITORY }}:{{ .Tag }}-amd64"
+    labels:
+      "org.opencontainers.image.created": "{{.Date}}"
+      "org.opencontainers.image.name": "{{.ProjectName}}"
+      "org.opencontainers.image.revision": "{{.FullCommit}}"
+      "org.opencontainers.image.version": "{{.Version}}"
+      "org.opencontainers.image.source": "{{.GitURL}}"
 
 # Sign the Docker images with cosign as well.
 docker_signs:
@@ -165,19 +151,30 @@ docker_signs:
       - "--yes"
 
 # Sets up homebrew-taps.
+# Reason: `brews` is deprecated; GoReleaser now generates Homebrew Casks for
+# pre-compiled binaries instead of hackish formulas. Casks live in the `Casks`
+# directory of the tap (the default). See https://goreleaser.com/deprecations#brews
 # PS: this will require a personal access token, as it is cross-repository.
-brews:
+homebrew_casks:
   - name: "{{ .ProjectName }}"
     repository:
       owner: oliverziegert
       name: homebrew-tap
       token: "{{ .Env.GH_PAT }}"
-    url_template: "{{ .Env.GITHUB_REPOSITORY_URL }}/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
-    directory: Formula
+    url:
+      template: "{{ .Env.GITHUB_REPOSITORY_URL }}/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
     homepage: "https://github.com/oliverziegert/homebrew-tap"
     description: Example rust release.
     license: GPL-3.0
     skip_upload: false
+    # Reason: the binary isn't Apple-notarized, so strip the quarantine
+    # attribute on install to keep Gatekeeper from blocking it.
+    hooks:
+      post:
+        install: |
+          if OS.mac?
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/paperless-ngx-uploader"]
+          end
 
 
 #winget:
