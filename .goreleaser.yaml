@@ -105,13 +105,14 @@ sboms:
   - artifacts: archive
 
 # Sign binaries with cosign.
+# Reason: cosign v3 replaced the separate certificate/signature outputs with a
+# single sigstore bundle file (--bundle), see https://goreleaser.com/blog/cosign-v3
 signs:
   - cmd: cosign
-    certificate: "${artifact}.pem"
+    signature: "${artifact}.sigstore.json"
     args:
       - sign-blob
-      - "--output-certificate=${certificate}"
-      - "--output-signature=${signature}"
+      - "--bundle=${signature}"
       - "${artifact}"
       - "--yes"
     artifacts: checksum
