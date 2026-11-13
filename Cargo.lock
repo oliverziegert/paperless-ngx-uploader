@@ -1484,7 +1484,7 @@ dependencies = [
 
 [[package]]
 name = "paperless-ngx-uploader"
-version = "0.3.23"
+version = "0.3.24"
 dependencies = [
  "apple-native-keyring-store",
  "clap",
