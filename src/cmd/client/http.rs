@@ -419,7 +419,7 @@ impl Client {
 
         let form = multipart::Form::new().part("document", part).text("title", title.clone());
 
-        debug!("file_name: {}", &title);
+        debug!("file_name: {title}");
 
         let response = match http_client.post(&endpoint).multipart(form).send().await {
             Ok(response) => response,

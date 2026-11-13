@@ -3,6 +3,8 @@ pub mod keyring;
 mod models;
 
 #[cfg(test)]
+mod file_tests;
+#[cfg(test)]
 mod tests;
 
 use crate::cmd::config::models::PublicConfig;
