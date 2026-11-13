@@ -7,7 +7,6 @@ authors = ["paperless-ngx <paperless-ngx@pc-ziegert.dev>"]
 [dependencies]
 clap = { version = "4.5.53", features = ["derive"] }
 colored = "3.0"
-confy = { version = "2.0.0", features = ["yaml_conf"], default-features = false }
 dirs = { version = "7.0.0" }
 env_logger = "0.11.8"
 http = "1.4.0"
@@ -22,6 +21,7 @@ serde = { version = "1.0.228", features = ["derive"] }
 thiserror = { version = "2.0.17"}
 tokio = { version = "1.48", features = ["full"] }
 url = "2.5"
+serde-saphyr = "2.1.1"
 
 # Platform-native credential stores for keyring-core (keyring v4 split the
 # platform backends into separate crates; the store is installed in
