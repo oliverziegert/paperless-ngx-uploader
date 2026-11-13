@@ -85,7 +85,7 @@ mod public_config_tests {
             path: config_path.clone(),
         };
 
-        // This should succeed because confy creates default config
+        // This should succeed because load() writes a default config
         let result = config.load();
         assert!(result.is_ok());
     }
