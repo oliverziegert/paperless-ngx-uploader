@@ -4,6 +4,9 @@
     "config:recommended"
   ],
   "platformAutomerge": true,
+  "lockFileMaintenance": {
+    "enabled": true
+  },
   "packageRules": [
     {
       "description": "Auto-merge minor and patch dependency updates",

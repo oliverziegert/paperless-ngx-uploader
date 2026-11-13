@@ -19,7 +19,7 @@ impl HandleConfig for PublicConfig {
         self.endpoint = loaded.endpoint;
         self.allow_insecure = loaded.allow_insecure;
         // Note: path is not overwritten - it's runtime state, not stored config
-        debug!("The configuration file path is: {:#?}", &self.path.display());
+        debug!("The configuration file path is: {:#?}", self.path.display());
         debug!("The configuration is:");
         debug!("{self:#?}");
         Ok(())
