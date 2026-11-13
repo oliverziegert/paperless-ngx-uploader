@@ -10,7 +10,14 @@ feature-depth = 1
 
 # Advisory database checks for known vulnerabilities
 [advisories]
-ignore = []
+ignore = [
+    # Retired as standalone crates and merged into `zbus` 6; pulled in via
+    # `secret-service` 5 (`zbus-secret-service-keyring-store`). Remove once
+    # that store ships on `zbus` 6.
+    { id = "RUSTSEC-2026-0370", reason = "zvariant merged into zbus 6; waiting for secret-service 6" },
+    { id = "RUSTSEC-2026-0371", reason = "zbus_names merged into zbus 6; waiting for secret-service 6" },
+    { id = "RUSTSEC-2026-0372", reason = "zvariant_derive merged into zbus 6; waiting for secret-service 6" },
+]
 
 # License compliance
 [licenses]
