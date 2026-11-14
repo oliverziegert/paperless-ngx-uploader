@@ -1,3 +1,17 @@
+## 0.4.0
+
+### ⚠️ Breaking
+
+- The endpoint in `config.yaml` is now the **base URL** of your Paperless-ngx instance (e.g. `https://paperless.example.com`, or `https://example.com/paperless` for a sub-path install). `upload` appends `/api/documents/post_document/` and `status` appends `/api/`. Before 0.4.0, `upload` posted to the endpoint exactly as stored, so a base URL failed with `403 Forbidden` ([#269](https://github.com/oliverziegert/paperless-ngx-uploader/issues/269)).
+- Existing configs are corrected automatically: an endpoint ending in `/api/documents/post_document`, `/api/documents` or `/api` is rewritten to the base URL on the first run, and a notice on stderr names the old and the new value. No action is needed.
+- The automatic rewrite will be **removed in 0.6.0**. From then on such an endpoint is an error.
+- If the config file is read-only (e.g. a read-only Docker mount), it cannot be rewritten. The command still runs with the corrected value but repeats the notice on every run; change the endpoint to the base URL by hand.
+- `init` accepts either form and always stores the base URL.
+
+Releases 0.2.3 to 0.3.24 are not listed here; see the [GitHub releases](https://github.com/oliverziegert/paperless-ngx-uploader/releases).
+
+---
+
 ## 0.2.2 - Enhanced User Experience & Developer Quality
 
 ### ✨ New Features

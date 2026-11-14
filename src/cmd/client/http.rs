@@ -12,7 +12,7 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use super::file_ops::{aggregate_files, archive_files, delete_expired_files};
-use super::helpers::get_title_from_filename;
+use super::helpers::{api_url, get_title_from_filename, API_STATUS_PATH, API_UPLOAD_PATH};
 
 const HEADER_AUTH_PREFIX: &str = "Token ";
 
@@ -164,8 +164,8 @@ impl Client {
 
     /// Checks connectivity and authentication with the Paperless-ngx API.
     ///
-    /// Makes a GET request to the /api/ endpoint to verify that the configured
-    /// endpoint is reachable and the authentication token is valid.
+    /// Makes a GET request to `<base URL>/api/` to verify that the configured
+    /// instance is reachable and the authentication token is valid.
     ///
     /// # Errors
     ///
@@ -178,7 +178,7 @@ impl Client {
         debug!("Called: Client::check_status");
 
         // Construct the API endpoint URL
-        let api_url = format!("{}/api/", self.cfg.public_config.endpoint.trim_end_matches('/'));
+        let api_url = api_url(&self.cfg.public_config.endpoint, API_STATUS_PATH);
         debug!("Checking status at: {api_url}");
 
         // Make GET request to /api/ endpoint
@@ -210,7 +210,8 @@ impl Client {
     /// Uploads documents to Paperless-ngx with optional archival and cleanup.
     ///
     /// This method aggregates files from either a single file or a folder, filters
-    /// them by the provided regex pattern, uploads them to the Paperless-ngx endpoint,
+    /// them by the provided regex pattern, uploads them to the document upload API
+    /// path below the configured base URL,
     /// and optionally archives uploaded files and deletes expired files.
     ///
     /// # Arguments
@@ -295,6 +296,8 @@ impl Client {
 
     /// Uploads a list of files to Paperless-ngx in parallel.
     ///
+    /// Each file is posted to `<base URL>/api/documents/post_document/`.
+    ///
     /// This method spawns concurrent tasks to upload files in parallel using
     /// `tokio::spawn` and `JoinSet`. Successfully uploaded files are collected and
     /// returned. If an individual file upload fails, the error is logged and
@@ -330,15 +333,17 @@ impl Client {
         let semaphore = Arc::new(Semaphore::new(MAX_CONCURRENT_UPLOADS));
         let mut set = JoinSet::new();
 
+        let upload_url = api_url(&self.cfg.public_config.endpoint, API_UPLOAD_PATH);
+
         // Spawn a task for each file upload
         for file in files {
             let file = file.clone();
             let http_client = self.http.clone();
-            let endpoint = self.cfg.public_config.endpoint.clone();
+            let upload_url = upload_url.clone();
             let permit = semaphore.clone().acquire_owned().await?;
 
             set.spawn(async move {
-                let result = Self::upload_file_task(http_client, endpoint, &file).await;
+                let result = Self::upload_file_task(http_client, upload_url, &file).await;
                 drop(permit); // Release semaphore permit when upload completes
                 (file, result)
             });
@@ -393,10 +398,10 @@ impl Client {
     ///
     /// This is a static method that can be called from spawned tasks without
     /// borrowing self. It performs the same upload logic but
-    /// takes owned parameters.
+    /// takes owned parameters. `upload_url` is the ready request URL.
     async fn upload_file_task(
         http_client: reqwest::Client,
-        endpoint: String,
+        upload_url: String,
         file: &PathBuf,
     ) -> Result<(), Box<dyn Error + Send + Sync>> {
         debug!("Called: Client::upload_file_task");
@@ -421,7 +426,7 @@ impl Client {
 
         debug!("file_name: {title}");
 
-        let response = match http_client.post(&endpoint).multipart(form).send().await {
+        let response = match http_client.post(&upload_url).multipart(form).send().await {
             Ok(response) => response,
             Err(e) => {
                 error!("Error uploading file: {e}");

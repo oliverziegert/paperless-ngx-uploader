@@ -112,7 +112,7 @@ mod http_tests {
 
         let mut cfg = Config::default();
         cfg.private_config.token = "token".to_string();
-        cfg.public_config.endpoint = format!("{}/api/endpoint", server_url);
+        cfg.public_config.endpoint = server_url.to_string();
         cfg.public_config.path = config_path;
 
         (temp_dir, cfg)
@@ -133,7 +133,7 @@ mod http_tests {
 
         let mut _s = mockito::Server::new_async().await;
         let _m = _s
-            .mock("POST", "/api/endpoint")
+            .mock("POST", "/api/documents/post_document/")
             .match_header("Authorization", "Token token")
             .with_status(StatusCode::OK.as_u16() as usize)
             .create_async()
@@ -184,7 +184,7 @@ mod http_tests {
 
         let mut _s = mockito::Server::new_async().await;
         let _m = _s
-            .mock("POST", "/api/endpoint")
+            .mock("POST", "/api/documents/post_document/")
             .match_header("Authorization", "Token token")
             .with_status(StatusCode::INTERNAL_SERVER_ERROR.as_u16() as usize)
             .create_async()
@@ -212,7 +212,7 @@ mod http_tests {
 
         let mut _s = mockito::Server::new_async().await;
         let _m = _s
-            .mock("POST", "/api/endpoint")
+            .mock("POST", "/api/documents/post_document/")
             .match_header("Authorization", "Token token")
             .with_status(StatusCode::BAD_REQUEST.as_u16() as usize)
             .create_async()
@@ -240,7 +240,7 @@ mod http_tests {
 
         // Setup: Create mock server that accepts uploads
         let mut server = mockito::Server::new_async().await;
-        let mock = server.mock("POST", "/api/endpoint")
+        let mock = server.mock("POST", "/api/documents/post_document/")
             .match_header("Authorization", "Token token")
             .with_status(200)
             .expect_at_least(2)  // Verify multiple files uploaded
@@ -278,7 +278,7 @@ mod http_tests {
 
         // First request succeeds
         let mock_success = server
-            .mock("POST", "/api/endpoint")
+            .mock("POST", "/api/documents/post_document/")
             .match_header("Authorization", "Token token")
             .with_status(200)
             .expect(1)
@@ -287,7 +287,7 @@ mod http_tests {
 
         // Second request fails
         let mock_fail = server
-            .mock("POST", "/api/endpoint")
+            .mock("POST", "/api/documents/post_document/")
             .match_header("Authorization", "Token token")
             .with_status(500)
             .expect(1)
@@ -316,6 +316,30 @@ mod http_tests {
         // Verify both mocks were called
         mock_success.assert_async().await;
         mock_fail.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_upload_file_sub_path_endpoint() {
+        // Edge case: an instance served under a sub-path keeps that sub-path.
+        setup_logger();
+
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("POST", "/paperless/api/documents/post_document/")
+            .with_status(StatusCode::OK.as_u16() as usize)
+            .create_async()
+            .await;
+
+        let (_temp_config_dir, mut cfg) = create_test_config(&server.url());
+        cfg.public_config.endpoint = format!("{}/paperless", server.url());
+        let client = Client::new(cfg).unwrap();
+
+        let (_temp_dir, file_path) = create_test_file("test_file.txt");
+        let (uploaded, _, failed_count) = client.upload_files(&[file_path]).await.unwrap();
+
+        assert_eq!(uploaded.len(), 1);
+        assert_eq!(failed_count, 0);
+        mock.assert_async().await;
     }
 }
 
@@ -638,7 +662,7 @@ mod status_tests {
 
         let mut cfg = Config::default();
         cfg.private_config.token = "token".to_string();
-        cfg.public_config.endpoint = format!("{}/api/endpoint", server_url);
+        cfg.public_config.endpoint = server_url.to_string();
         cfg.public_config.path = config_path;
 
         (temp_dir, cfg)
@@ -650,7 +674,7 @@ mod status_tests {
 
         let mut _s = mockito::Server::new_async().await;
         let _m = _s
-            .mock("GET", "/api/endpoint/api/")
+            .mock("GET", "/api/")
             .match_header("Authorization", "Token token")
             .with_status(StatusCode::OK.as_u16() as usize)
             .create_async()
@@ -670,7 +694,7 @@ mod status_tests {
 
         let mut _s = mockito::Server::new_async().await;
         let _m = _s
-            .mock("GET", "/api/endpoint/api/")
+            .mock("GET", "/api/")
             .match_header("Authorization", "Token token")
             .with_status(StatusCode::UNAUTHORIZED.as_u16() as usize)
             .create_async()
@@ -692,7 +716,7 @@ mod status_tests {
 
         let mut _s = mockito::Server::new_async().await;
         let _m = _s
-            .mock("GET", "/api/endpoint/api/")
+            .mock("GET", "/api/")
             .match_header("Authorization", "Token token")
             .with_status(StatusCode::INTERNAL_SERVER_ERROR.as_u16() as usize)
             .create_async()
@@ -714,7 +738,7 @@ mod status_tests {
 
         let mut _s = mockito::Server::new_async().await;
         let _m = _s
-            .mock("GET", "/api/endpoint/api/")
+            .mock("GET", "/api/")
             .match_header("Authorization", "Token token")
             .with_status(StatusCode::NOT_FOUND.as_u16() as usize)
             .create_async()
@@ -731,6 +755,26 @@ mod status_tests {
     }
 
     #[tokio::test]
+    async fn test_check_status_sub_path_endpoint() {
+        // Edge case: sub-path with trailing slash yields exactly one slash before `api/`.
+        setup_logger();
+
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("GET", "/paperless/api/")
+            .with_status(StatusCode::OK.as_u16() as usize)
+            .create_async()
+            .await;
+
+        let (_temp_config_dir, mut cfg) = create_test_config(&server.url());
+        cfg.public_config.endpoint = format!("{}/paperless/", server.url());
+        let client = Client::new(cfg).unwrap();
+
+        assert!(client.check_status().await.is_ok());
+        mock.assert_async().await;
+    }
+
+    #[tokio::test]
     async fn test_check_status_connection_error() {
         setup_logger();
 
@@ -740,8 +784,7 @@ mod status_tests {
         let mut cfg = Config::default();
         cfg.private_config.token = "token".to_string();
         // Use an invalid URL that will fail to connect
-        cfg.public_config.endpoint =
-            "http://invalid-host-that-does-not-exist:9999/api/endpoint".to_string();
+        cfg.public_config.endpoint = "http://invalid-host-that-does-not-exist:9999".to_string();
         cfg.public_config.path = config_path;
 
         let client = Client::new(cfg).unwrap();
