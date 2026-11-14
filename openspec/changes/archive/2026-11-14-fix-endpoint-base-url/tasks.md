@@ -28,7 +28,7 @@
 - [x] 5.1 Add a hand-written `## 0.4.0` section at the top of `CHANGELOG.md` with a "⚠️ Breaking" block (endpoint is the base URL, automatic rewrite of existing configs, rewrite ends in 0.6.0, read-only configs must be edited by hand) and one line pointing to GitHub releases for 0.2.3–0.3.23; verify the section renders and names `0.6.0`
 - [x] 5.2 Add an "Upgrading to 0.4.0" section to `README.md` with the same content and a before/after `config.yaml` example, and describe the endpoint as base URL in the init, configuration and security sections; verify `grep -n -i "endpoint" README.md` shows no remaining description that implies a full API URL
 - [x] 5.3 Update the endpoint description and upload workflow in `CLAUDE.md` (base URL, paths appended per command, migration on load); verify the "Storage Backends" and "Upload Workflow" sections match the new behavior
-- [x] 5.4 Review `openspec/changes/fix-endpoint-base-url/issue-269-reply.md` against the final behavior and wording of the notice; verify the quoted notice text matches the implementation. Do not post it
+- [x] 5.4 Review `../../../issue-269-reply.md` against the final behavior and wording of the notice; verify the quoted notice text matches the implementation. Do not post it
 
 ## 6. Integration and release checks
 
@@ -38,6 +38,6 @@
 ## Workflow follow-up
 
 - After the release job has run, confirm the tag is `v0.4.0` and paste the breaking block from `CHANGELOG.md` into the GitHub release description (goreleaser only lists commit subjects).
-- Post `issue-269-reply.md` on #269 only after the reporter has confirmed the workaround, then close the issue once the release is out.
+- Post `../../../issue-269-reply.md` on #269 only after the reporter has confirmed the workaround, then close the issue once the release is out.
 - Open a follow-up change for 0.6.0 that replaces the automatic rewrite with the error specified in `endpoint-configuration`.
 - Archive this change after review.

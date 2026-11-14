@@ -95,7 +95,7 @@ Migration tests go in `src/cmd/config/file_tests.rs` (61 lines) using `tempfile`
 
 1. Merge with the `feat!:` subject; the release job tags `v0.4.0`.
 2. Paste the breaking block from `CHANGELOG.md` into the `v0.4.0` GitHub release description.
-3. After the reporter confirms, post `issue-269-reply.md` on #269.
+3. After the reporter confirms, post `../../../issue-269-reply.md` on #269.
 4. Later change, released as `0.6.0`: replace the rewrite in `PublicConfig::load()` with the error specified in `endpoint-configuration`; keep `normalize_endpoint` for `init` and for computing the suggested value.
 
 Rollback: revert the commit. Configs already migrated hold a base URL, which the previous version handles for `status` but not for `upload`; users who relied on the workaround URL would need to restore it by hand.
