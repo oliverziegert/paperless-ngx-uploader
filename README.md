@@ -40,7 +40,7 @@ cargo build --release
 
 The application uses a secure split configuration approach:
 
-- **Public configuration** (endpoint URL): Stored in `~/.config/paperless-ngx-uploader/config.yaml`
+- **Public configuration** (base URL of your Paperless-ngx instance): Stored in `~/.config/paperless-ngx-uploader/config.yaml`
 - **Private configuration** (token): Stored in your OS keyring
   - macOS: Keychain
   - Linux: Secret Service
@@ -57,7 +57,7 @@ paperless-ngx-uploader init
 ```
 
 You'll be prompted for:
-1. **Paperless-ngx URL** - The endpoint of your Paperless-ngx instance (e.g., `http://localhost:8000`)
+1. **Paperless-ngx URL** - The base URL of your Paperless-ngx instance (e.g., `https://paperless.example.com`, or `https://example.com/paperless` for a sub-path install). Do not add an API path; the uploader appends `/api/...` itself. If you paste a full API URL, `init` stores the base URL and tells you.
 2. **Authentication Token** - Your API token from Paperless-ngx settings
 
 ### Viewing Configuration
@@ -68,17 +68,41 @@ Check where your configuration is stored:
 # View config file location
 ls ~/.config/paperless-ngx-uploader/config.yaml
 
-# View current endpoint (token is securely stored in keyring)
+# View current endpoint, i.e. the base URL (token is securely stored in keyring)
 cat ~/.config/paperless-ngx-uploader/config.yaml
 ```
 
 ### Updating Configuration
 
-To update your endpoint or token, simply run `init` again:
+To update your endpoint (base URL) or token, simply run `init` again:
 
 ```bash
 paperless-ngx-uploader init
 ```
+
+### Upgrading to 0.4.0
+
+- The endpoint in `config.yaml` is now the **base URL** of your Paperless-ngx instance (e.g. `https://paperless.example.com`, or `https://example.com/paperless` for a sub-path install). `upload` appends `/api/documents/post_document/` and `status` appends `/api/`. Before 0.4.0, `upload` posted to the endpoint exactly as stored, so a base URL failed with `403 Forbidden` ([#269](https://github.com/oliverziegert/paperless-ngx-uploader/issues/269)).
+- Existing configs are corrected automatically: an endpoint ending in `/api/documents/post_document`, `/api/documents` or `/api` is rewritten to the base URL on the first run, and a notice on stderr names the old and the new value. No action is needed.
+- The automatic rewrite will be **removed in 0.6.0**. From then on such an endpoint is an error.
+- If the config file is read-only (e.g. a read-only Docker mount), it cannot be rewritten. The command still runs with the corrected value but repeats the notice on every run; change the endpoint to the base URL by hand.
+- `init` accepts either form and always stores the base URL.
+
+Before (0.3.x workaround):
+
+```yaml
+endpoint: https://paperless.example.com/api/documents/post_document/
+allow_insecure: false
+```
+
+After (0.4.0 and later):
+
+```yaml
+endpoint: https://paperless.example.com
+allow_insecure: false
+```
+
+Your token stays in the OS keyring; there is no need to run `init` again.
 
 ### Removing Configuration
 
@@ -412,7 +436,7 @@ RUST_LOG=debug paperless-ngx-uploader upload --file test.pdf
 
 - Authentication tokens are **never stored in plaintext**
 - Tokens are stored using your operating system's native credential manager
-- Configuration files only contain non-sensitive data (endpoint URLs)
+- Configuration files only contain non-sensitive data (the base URL of your instance)
 
 ## License
 

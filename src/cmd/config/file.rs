@@ -1,7 +1,41 @@
 use crate::cmd::config::models::PublicConfig;
 use crate::cmd::config::HandleConfig;
+use crate::cmd::endpoint::{normalize_endpoint, MIGRATION_SUNSET_VERSION};
 use crate::cmd::models::CmdError;
-use log::debug;
+use log::{debug, warn};
+
+impl PublicConfig {
+    /// Reduces an old-style endpoint (with API path) to the base URL and rewrites the file.
+    ///
+    /// Does nothing when the endpoint already is a base URL. Otherwise the reduced
+    /// value is used in memory, the file is rewritten and a notice is printed to stderr.
+    fn migrate_endpoint(&mut self) {
+        let reduced = normalize_endpoint(&self.endpoint);
+        if reduced == self.endpoint {
+            return;
+        }
+        let old = std::mem::replace(&mut self.endpoint, reduced);
+        let path = self.path.display();
+        // Reason: a failed save must not fail the command. Unattended runs (cron,
+        // read-only config mounts) keep working with the reduced value and repeat
+        // the notice until the file is fixed by hand.
+        let outcome = if self.save().is_ok() {
+            format!("{path} was updated.")
+        } else {
+            format!("Could not update {path}; please change the endpoint manually.")
+        };
+        let notice = format!(
+            "Notice: the configured endpoint '{old}' contains an API path.\n\
+             The endpoint must be the base URL of your Paperless-ngx instance; using '{}'.\n\
+             {outcome}\n\
+             Automatic correction will be removed in version {MIGRATION_SUNSET_VERSION}.",
+            self.endpoint
+        );
+        // Reason: the default log level is Error, so `warn!` alone would be invisible.
+        eprintln!("{notice}");
+        warn!("{notice}");
+    }
+}
 
 impl HandleConfig for PublicConfig {
     /// Loads the configuration from the YAML file at `self.path`.
@@ -12,10 +46,14 @@ impl HandleConfig for PublicConfig {
     /// Note: The `path` field is not overwritten from the file as it represents
     /// runtime state, not stored configuration.
     ///
+    /// An endpoint that still contains an API path (configs written before 0.4.0)
+    /// is reduced to the base URL, the file is rewritten and a notice is printed.
+    ///
     /// # Returns
     ///
     /// `Ok(())` on success, `Err(CmdError::ConfigFileLoadFailed)` if the file
-    /// cannot be read, parsed, or (when missing) created.
+    /// cannot be read, parsed, or (when missing) created. A failed rewrite of an
+    /// old-style endpoint is not an error.
     fn load(&mut self) -> Result<(), CmdError> {
         debug!("Config::PublicConfig::load called");
         let load_failed = || CmdError::ConfigFileLoadFailed(self.path.display().to_string());
@@ -33,6 +71,7 @@ impl HandleConfig for PublicConfig {
         self.endpoint = loaded.endpoint;
         self.allow_insecure = loaded.allow_insecure;
         // Note: path is not overwritten - it's runtime state, not stored config
+        self.migrate_endpoint();
         debug!("The configuration file path is: {:#?}", self.path.display());
         debug!("The configuration is:");
         debug!("{self:#?}");

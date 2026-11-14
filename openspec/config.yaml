@@ -1,0 +1,36 @@
+schema: spec-driven
+
+context: |
+  Every push to main publishes a release (binaries + Docker image). The version
+  is derived from the Conventional Commit types since the last tag (cocogitto),
+  so the commit subject of a change decides the version users get.
+  Users run the tool unattended (cron, systemd timers, Docker sidecar): nobody
+  is there to answer a new prompt or read a one-time message.
+  Release targets: Linux x86_64/aarch64, macOS x86_64/aarch64, Windows x86_64,
+  and an Alpine Docker image. CI only tests on ubuntu-latest.
+  The API token lives only in the OS keyring. It never appears in the config
+  file, logs, error messages, or in examples inside artifacts.
+  CLAUDE.md conventions (file size limit, tests, docstrings) apply to all tasks.
+  CHANGELOG.md is not maintained; do not plan edits to it.
+
+rules:
+  proposal:
+    - State the intended Conventional Commit subject (type, `!` if breaking) and the version bump it causes.
+    - If a crate is added, name it under Impact with the reason std or an existing dependency does not suffice. Do not add crates that need a system C library (breaks cross-compilation).
+    - Say explicitly if the change weakens the HTTPS/localhost endpoint check or touches how the token is handled.
+  design:
+    - A BREAKING change needs a Migration Plan that says what happens to existing config files and to unattended runs after the upgrade.
+    - A change touching file paths, the keyring, or terminal input/output states its behavior on Linux, macOS, Windows, and in headless/Docker runs without a keyring service or TTY.
+  tasks:
+    - A change to user-visible behavior includes tasks to update README.md and CLAUDE.md.
+    - The last task group runs `cargo fmt --check`, `cargo clippy -- -D warnings` and `cargo test`; add `cargo deny check` and `cargo audit` when Cargo.toml changes.
+    - Steps that need a commit or happen after the merge (commit, `cog bump --auto --dry-run --skip-untracked`, release notes, issue replies, follow-up changes) go in an unnumbered "Workflow follow-up" section without checkboxes.
+
+operations:
+  apply:
+    guidance:
+      - Work locally only. Do not commit, push, tag, or post to GitHub (issues, PRs, releases); leave those to the user.
+  archive:
+    guidance:
+      - Archive on the feature branch right before it is merged, so main never carries an open change. All tasks must be checked and fmt, clippy and tests green.
+      - Finish by listing the change's open "Workflow follow-up" items to the user.

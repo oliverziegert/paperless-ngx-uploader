@@ -7,7 +7,7 @@ use super::url_validator::{validate_endpoint_format, validate_endpoint_security}
 
 const ENDPOINT_PLACEHOLDER: &str = "https://paperless.example.com";
 
-/// Prompts the user to enter a Paperless-ngx endpoint URL.
+/// Prompts the user to enter the base URL of a Paperless-ngx instance.
 ///
 /// Prints a security help message and displays a prompt with a placeholder
 /// example (`https://paperless.example.com`). If the user presses Enter
@@ -24,6 +24,9 @@ const ENDPOINT_PLACEHOLDER: &str = "https://paperless.example.com";
 pub fn get_endpoint_by_prompt() -> Result<String, Box<dyn Error>> {
     debug!("get_endpoint_by_prompt called");
 
+    println!(
+        "Enter the base URL of your Paperless-ngx instance (API paths are added automatically)."
+    );
     println!("Use HTTPS for secure connections. HTTP is only safe for localhost.");
 
     loop {

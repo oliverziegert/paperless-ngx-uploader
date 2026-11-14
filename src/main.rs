@@ -1,6 +1,7 @@
 mod cmd;
 
 use cmd::config::Config;
+use cmd::endpoint::normalize_endpoint;
 use cmd::input::{get_endpoint_by_prompt, get_token_by_prompt};
 use cmd::logger::setup_logging;
 use cmd::url_validator::{validate_endpoint_format, validate_endpoint_security};
@@ -30,7 +31,7 @@ struct Cli {
 enum Commands {
     /// Initializes the Config file
     Init {
-        /// The url to your Paperless-ngx instance
+        /// The base URL of your Paperless-ngx instance, without an API path
         #[arg(short, long, value_name = "ENDPOINT")]
         endpoint: Option<String>,
 
@@ -188,19 +189,66 @@ fn init(
     cfg: &mut Config,
 ) -> Result<(), Box<dyn Error>> {
     debug!("init called: endpoint: {endpoint:#?}, allow_insecure: {allow_insecure}");
-    if let Some(endpoint) = endpoint {
-        cfg.public_config.endpoint = endpoint;
+    let endpoint = if let Some(endpoint) = endpoint {
+        endpoint
     } else {
         match get_endpoint_by_prompt() {
-            Ok(endpoint) => {
-                cfg.public_config.endpoint = endpoint;
-            }
+            Ok(endpoint) => endpoint,
             Err(e) => {
                 error!("Error getting endpoint: {e}");
                 return Err(e);
             }
         }
+    };
+    let reduced = set_endpoint(&endpoint, allow_insecure, cfg)?;
+
+    match get_token_by_prompt() {
+        Ok(token) => {
+            cfg.private_config.token = token;
+        }
+        Err(e) => {
+            error!("Error getting token: {e}");
+            return Err(e);
+        }
     }
+
+    if let Err(e) = cfg.save() {
+        error!("Error saving config: {e}");
+        Err("Error saving config".into())
+    } else {
+        if reduced {
+            println!(
+                "Stored endpoint as '{}' (API paths are added automatically).",
+                cfg.public_config.endpoint
+            );
+        }
+        info!("Config saved successfully");
+        Ok(())
+    }
+}
+
+/// Reduces the given endpoint to the base URL, validates it and stores it in `cfg`.
+///
+/// # Arguments
+///
+/// * `endpoint` - Endpoint from `--endpoint` or the prompt; may contain an API path.
+/// * `allow_insecure` - Accept plain HTTP to non-localhost hosts.
+/// * `cfg` - Configuration that receives the reduced endpoint (not saved here).
+///
+/// # Returns
+///
+/// `Ok(true)` if an API path was cut off, `Ok(false)` if the endpoint was stored as given.
+///
+/// # Errors
+///
+/// Returns an error if format or security validation of the reduced endpoint fails.
+fn set_endpoint(
+    endpoint: &str,
+    allow_insecure: bool,
+    cfg: &mut Config,
+) -> Result<bool, Box<dyn Error>> {
+    cfg.public_config.endpoint = normalize_endpoint(endpoint);
+    let reduced = cfg.public_config.endpoint != endpoint;
 
     // Validate endpoint format
     if let Err(e) = validate_endpoint_format(&cfg.public_config.endpoint) {
@@ -220,23 +268,7 @@ fn init(
         }
     }
 
-    match get_token_by_prompt() {
-        Ok(token) => {
-            cfg.private_config.token = token;
-        }
-        Err(e) => {
-            error!("Error getting token: {e}");
-            return Err(e);
-        }
-    }
-
-    if let Err(e) = cfg.save() {
-        error!("Error saving config: {e}");
-        Err("Error saving config".into())
-    } else {
-        info!("Config saved successfully");
-        Ok(())
-    }
+    Ok(reduced)
 }
 
 /// Uploads files to Paperless-ngx with optional archival and cleanup.
@@ -330,3 +362,7 @@ pub async fn status(allow_insecure: bool, cfg: Config) -> Result<(), Box<dyn Err
 
     client.check_status().await
 }
+
+#[cfg(test)]
+#[path = "main_tests.rs"]
+mod tests;

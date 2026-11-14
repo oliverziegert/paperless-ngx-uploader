@@ -25,7 +25,8 @@ pub struct Config {
 /// Default location: `~/.config/paperless-ngx-uploader/config.yaml`
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PublicConfig {
-    /// The URL to your Paperless-ngx instance (e.g., <https://paperless.example.com>)
+    /// The base URL of your Paperless-ngx instance (e.g., <https://paperless.example.com>),
+    /// including any sub-path but without an API path; API paths are appended per request.
     pub endpoint: String,
 
     /// Allow insecure HTTP connections to non-localhost endpoints.
