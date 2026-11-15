@@ -4,7 +4,7 @@
 ![Version](https://img.shields.io/github/v/release/oliverziegert/paperless-ngx-uploader)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue.svg)
 
-A secure Rust CLI tool for uploading documents to your Paperless-ngx instance. Features batch uploads, file filtering, automatic archiving, and secure credential storage.
+A secure Rust CLI tool for uploading documents to your Paperless-ngx instance, built to get scans from a document scanner into Paperless-ngx reliably. Features batch uploads, file filtering, automatic archiving, and secure credential storage.
 
 ## Features
 
@@ -23,6 +23,32 @@ This tool uses the standard Paperless-ngx REST API and is compatible with:
 - **`status` command**: needs Paperless-ngx 2.1.0 or newer (it probes `/api/profile/`); `upload` is unaffected
 
 The uploader has been tested with recent Paperless-ngx versions and should work with any version that supports the standard document upload API. If you encounter compatibility issues with your Paperless-ngx version, please [open an issue](https://github.com/oliverziegert/paperless-ngx-uploader/issues).
+
+## Why This Tool Exists
+
+My document scanner (Fujitsu ScanSnap iX1500) can only save scans to local storage or to
+cloud services. It cannot upload to something useful like
+WebDAV, let alone to Paperless-ngx directly.
+
+This tool closes that gap. It was built to get scanned letters into
+Paperless-ngx reliably:
+
+1. The scanner triggers a scan job on a VM.
+2. The VM stores the scanned document as a PDF in a temporary folder.
+3. The VM runs `paperless-ngx-uploader` to push the PDF to Paperless-ngx.
+
+The ScanSnap driver and software are only available for macOS and Windows,
+so the VM runs Windows and calls the uploader like this:
+
+```powershell
+C:\path\to\binary\paperless-ngx-uploader.exe upload --folder C:\path\to\scans --archive --delete
+```
+
+With `--archive --delete`, uploaded scans are kept in an `archive/` subfolder
+as a safety net and deleted after 31 days (the default `--period`).
+
+It works just as well for any other folder of documents; see
+[Usage](#usage) and [Advanced Usage - Automation](#advanced-usage---automation).
 
 ## Installation
 
@@ -129,8 +155,10 @@ paperless-ngx-uploader upload --file /path/to/document.pdf
 
 ### Upload Multiple Files
 
+`--file` takes exactly one file. To upload several, put them in a folder and select them with `--filter`:
+
 ```bash
-paperless-ngx-uploader upload --file doc1.pdf --file doc2.pdf --file doc3.pdf
+paperless-ngx-uploader upload --folder /path/to/documents --filter "doc[123]\.pdf"
 ```
 
 ### Upload Folder
@@ -144,7 +172,7 @@ paperless-ngx-uploader upload --folder /path/to/documents
 Upload only files matching a pattern:
 
 ```bash
-paperless-ngx-uploader upload --folder /path/to/documents --regex "invoice.*\.pdf"
+paperless-ngx-uploader upload --folder /path/to/documents --filter "invoice.*\.pdf"
 ```
 
 ### Upload with Archiving
@@ -160,7 +188,7 @@ paperless-ngx-uploader upload --folder /path/to/documents --archive
 Delete archived files older than 31 days (default):
 
 ```bash
-paperless-ngx-uploader upload --folder /path/to/documents --archive --cleanup
+paperless-ngx-uploader upload --folder /path/to/documents --archive --delete
 ```
 
 ### Custom Cleanup Period
@@ -168,7 +196,7 @@ paperless-ngx-uploader upload --folder /path/to/documents --archive --cleanup
 Delete archived files older than 7 days:
 
 ```bash
-paperless-ngx-uploader upload --folder /path/to/documents --archive --cleanup --cleanup-after-days 7
+paperless-ngx-uploader upload --folder /path/to/documents --archive --delete --period 7
 ```
 
 ### Custom Config Path
@@ -203,13 +231,13 @@ Schedule automatic uploads using cron. This example uploads files daily at 2 AM:
 crontab -e
 
 # Add this line to upload daily at 2:00 AM
-0 2 * * * /path/to/paperless-ngx-uploader upload --folder /home/user/scans --archive --cleanup
+0 2 * * * /path/to/paperless-ngx-uploader upload --folder /home/user/scans --archive --delete
 
 # Upload every 4 hours with regex filtering
-0 */4 * * * /path/to/paperless-ngx-uploader upload --folder /home/user/documents --regex ".*\.pdf$" --archive
+0 */4 * * * /path/to/paperless-ngx-uploader upload --folder /home/user/documents --filter ".*\.pdf$" --archive
 
 # Upload on weekdays at 9 AM with custom cleanup period
-0 9 * * 1-5 /path/to/paperless-ngx-uploader upload --folder /home/user/invoices --archive --cleanup --cleanup-after-days 7
+0 9 * * 1-5 /path/to/paperless-ngx-uploader upload --folder /home/user/invoices --archive --delete --period 7
 ```
 
 **Tip:** Use absolute paths in cron jobs and redirect output to a log file for debugging:
@@ -232,7 +260,7 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=/path/to/paperless-ngx-uploader upload --folder /home/user/scans --archive --cleanup
+ExecStart=/path/to/paperless-ngx-uploader upload --folder /home/user/scans --archive --delete
 StandardOutput=journal
 StandardError=journal
 
@@ -300,15 +328,15 @@ log "Starting batch upload process"
 
 # Upload invoices with 7-day cleanup
 log "Processing invoices..."
-$UPLOADER upload --folder /home/user/invoices --regex "invoice.*\.pdf" --archive --cleanup --cleanup-after-days 7
+$UPLOADER upload --folder /home/user/invoices --filter "invoice.*\.pdf" --archive --delete --period 7
 
 # Upload receipts with 30-day cleanup
 log "Processing receipts..."
-$UPLOADER upload --folder /home/user/receipts --archive --cleanup --cleanup-after-days 30
+$UPLOADER upload --folder /home/user/receipts --archive --delete --period 30
 
 # Upload general documents with 60-day cleanup
 log "Processing general documents..."
-$UPLOADER upload --folder /home/user/documents --archive --cleanup --cleanup-after-days 60
+$UPLOADER upload --folder /home/user/documents --archive --delete --period 60
 
 log "Batch upload completed successfully"
 ```
@@ -376,7 +404,7 @@ services:
     volumes:
       - ./paperless-ngx-uploader:/app
       - /host/scans:/scans
-    command: /app/target/release/paperless-ngx-uploader upload --folder /scans --archive --cleanup
+    command: /app/target/release/paperless-ngx-uploader upload --folder /scans --archive --delete
     environment:
       - PAPERLESS_URL=http://paperless:8000
 ```
