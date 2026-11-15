@@ -5,6 +5,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## 🔄 Project Awareness & Context
 - **Use consistent naming conventions, file structure, and architecture patterns**.
 
+## 🔁 Workflow
+Every change follows these steps, in order:
+1. **Branch**: create a new git branch or worktree (never work on `main`).
+2. **Design**: use the `grilling` or `brainstorm` skill.
+3. **Propose**: create the OpenSpec change (`/opsx:propose`).
+4. **Review** the spec with the user before implementing.
+5. **Apply** the spec (`/opsx:apply`).
+6. **Test** the change (`cargo test`).
+7. **Commit** using the `/git-commit` skill.
+8. **Open a GitHub PR**.
+9. **Wait for all CI checks** to finish successfully.
+10. **Archive** the spec (`/opsx:archive`).
+11. **Commit and push** the archival of the spec.
+
 ## 🧱 Code Structure & Modularity
 - **Never create a file longer than 500 lines of code.** If a file approaches this limit, refactor by splitting it into modules or helper files.
 - **Organize code into clearly separated modules**, grouped by feature or responsibility.
