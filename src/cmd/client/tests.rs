@@ -104,6 +104,24 @@ mod http_tests {
         assert_eq!(get_title_from_filename(&file), expected_title);
     }
 
+    #[test]
+    fn test_get_title_from_filename_multi_byte_on_limit() {
+        setup_logger();
+
+        // Reason: `ß` spans bytes 63..65, so a cut at byte 64 would land inside it.
+        let prefix = "a".repeat(MAX_TITLE_LENGTH - 1);
+        let file = PathBuf::from(format!("{prefix}ß_rest.pdf"));
+        assert_eq!(get_title_from_filename(&file), format!("{prefix}ß"));
+    }
+
+    #[test]
+    fn test_get_title_from_filename_long_multi_byte_name() {
+        setup_logger();
+
+        let file = PathBuf::from(format!("{}.pdf", "ä".repeat(70)));
+        assert_eq!(get_title_from_filename(&file), "ä".repeat(MAX_TITLE_LENGTH));
+    }
+
     /// Helper function to create a test config for the given mock server URL
     /// Returns both the TempDir (which must be kept alive) and the Config
     fn create_test_config(server_url: &str) -> (TempDir, Config) {
