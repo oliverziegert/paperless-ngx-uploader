@@ -163,17 +163,17 @@ homebrew_casks:
       token: "{{ .Env.GH_PAT }}"
     url:
       template: "{{ .Env.GITHUB_REPOSITORY_URL }}/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
-    homepage: "https://github.com/oliverziegert/homebrew-tap"
-    description: Example rust release.
+    homepage: "https://github.com/oliverziegert/paperless-ngx-uploader"
+    description: CLI tool for uploading documents to a Paperless-ngx instance
     license: GPL-3.0
     skip_upload: false
     # Reason: the binary isn't Apple-notarized, so strip the quarantine
     # attribute on install to keep Gatekeeper from blocking it.
     hooks:
       post:
-        install: |
-          if OS.mac?
-            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/paperless-ngx-uploader"]
+        install_steps: |
+          on_macos do
+            run "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "{{ .StagedPath }}/paperless-ngx-uploader"]
           end
 
 
