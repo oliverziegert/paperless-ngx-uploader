@@ -142,7 +142,7 @@ The CLI uses clap for argument parsing with two main commands:
 3. **Archive** (optional): Moves uploaded files to an `archive/` subfolder
 4. **Cleanup** (optional): Deletes archived files older than specified period (default 31 days)
 
-Request URLs are composed from the stored base URL by `api_url` (`src/cmd/client/helpers.rs`): `upload` appends `api/documents/post_document/`, `status` appends `api/`.
+Request URLs are composed from the stored base URL by `api_url` (`src/cmd/client/helpers.rs`): `upload` appends `api/documents/post_document/`, `status` appends `api/profile/` (needs Paperless-ngx 2.1.0 or newer).
 
 The client uses reqwest with blocking API and sets the Authorization header to `Token <token>`.
 

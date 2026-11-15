@@ -20,6 +20,7 @@ This tool uses the standard Paperless-ngx REST API and is compatible with:
 
 - **Paperless-ngx**: v1.10.0 and later
 - **API Version**: Stable document upload endpoint (`/api/documents/post_document/`)
+- **`status` command**: needs Paperless-ngx 2.1.0 or newer (it probes `/api/profile/`); `upload` is unaffected
 
 The uploader has been tested with recent Paperless-ngx versions and should work with any version that supports the standard document upload API. If you encounter compatibility issues with your Paperless-ngx version, please [open an issue](https://github.com/oliverziegert/paperless-ngx-uploader/issues).
 
@@ -82,7 +83,7 @@ paperless-ngx-uploader init
 
 ### Upgrading to 0.4.0
 
-- The endpoint in `config.yaml` is now the **base URL** of your Paperless-ngx instance (e.g. `https://paperless.example.com`, or `https://example.com/paperless` for a sub-path install). `upload` appends `/api/documents/post_document/` and `status` appends `/api/`. Before 0.4.0, `upload` posted to the endpoint exactly as stored, so a base URL failed with `403 Forbidden` ([#269](https://github.com/oliverziegert/paperless-ngx-uploader/issues/269)).
+- The endpoint in `config.yaml` is now the **base URL** of your Paperless-ngx instance (e.g. `https://paperless.example.com`, or `https://example.com/paperless` for a sub-path install). `upload` appends `/api/documents/post_document/` and `status` appends `/api/profile/`. Before 0.4.0, `upload` posted to the endpoint exactly as stored, so a base URL failed with `403 Forbidden` ([#269](https://github.com/oliverziegert/paperless-ngx-uploader/issues/269)).
 - Existing configs are corrected automatically: an endpoint ending in `/api/documents/post_document`, `/api/documents` or `/api` is rewritten to the base URL on the first run, and a notice on stderr names the old and the new value. No action is needed.
 - The automatic rewrite will be **removed in 0.6.0**. From then on such an endpoint is an error.
 - If the config file is read-only (e.g. a read-only Docker mount), it cannot be rewritten. The command still runs with the corrected value but repeats the notice on every run; change the endpoint to the base URL by hand.

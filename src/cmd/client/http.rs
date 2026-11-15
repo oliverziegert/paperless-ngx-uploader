@@ -164,7 +164,7 @@ impl Client {
 
     /// Checks connectivity and authentication with the Paperless-ngx API.
     ///
-    /// Makes a GET request to `<base URL>/api/` to verify that the configured
+    /// Makes a GET request to `<base URL>/api/profile/` to verify that the configured
     /// instance is reachable and the authentication token is valid.
     ///
     /// # Errors
@@ -172,6 +172,7 @@ impl Client {
     /// Returns an error if:
     /// - Network connection fails
     /// - Authentication fails (401 Unauthorized)
+    /// - The profile path is not found (404): wrong endpoint, or Paperless-ngx older than 2.1.0
     /// - Server returns an error status code
     /// - The API endpoint is not accessible
     pub async fn check_status(&self) -> Result<(), Box<dyn Error>> {
@@ -181,7 +182,7 @@ impl Client {
         let api_url = api_url(&self.cfg.public_config.endpoint, API_STATUS_PATH);
         debug!("Checking status at: {api_url}");
 
-        // Make GET request to /api/ endpoint
+        // Make GET request to the profile API path
         let response = match self.http.get(&api_url).send().await {
             Ok(response) => response,
             Err(e) => {
@@ -201,6 +202,15 @@ impl Client {
         } else if status == reqwest::StatusCode::UNAUTHORIZED {
             error!("Authentication failed: Invalid or missing token");
             Err("Authentication failed: 401 Unauthorized".into())
+        } else if status == reqwest::StatusCode::NOT_FOUND {
+            // Reason: 404 has two likely causes the generic message would hide: the
+            // endpoint is not the base URL, or the instance predates the profile route.
+            let msg = format!(
+                "{API_STATUS_PATH} not found ({status}): check the endpoint, \
+                 or the Paperless-ngx version may be older than 2.1.0"
+            );
+            error!("{msg}");
+            Err(msg.into())
         } else {
             error!("API returned error status: {status}");
             Err(format!("API returned error status: {status}").into())
