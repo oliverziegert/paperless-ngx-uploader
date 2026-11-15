@@ -674,7 +674,7 @@ mod status_tests {
 
         let mut _s = mockito::Server::new_async().await;
         let _m = _s
-            .mock("GET", "/api/")
+            .mock("GET", "/api/profile/")
             .match_header("Authorization", "Token token")
             .with_status(StatusCode::OK.as_u16() as usize)
             .create_async()
@@ -694,7 +694,7 @@ mod status_tests {
 
         let mut _s = mockito::Server::new_async().await;
         let _m = _s
-            .mock("GET", "/api/")
+            .mock("GET", "/api/profile/")
             .match_header("Authorization", "Token token")
             .with_status(StatusCode::UNAUTHORIZED.as_u16() as usize)
             .create_async()
@@ -716,7 +716,7 @@ mod status_tests {
 
         let mut _s = mockito::Server::new_async().await;
         let _m = _s
-            .mock("GET", "/api/")
+            .mock("GET", "/api/profile/")
             .match_header("Authorization", "Token token")
             .with_status(StatusCode::INTERNAL_SERVER_ERROR.as_u16() as usize)
             .create_async()
@@ -738,7 +738,7 @@ mod status_tests {
 
         let mut _s = mockito::Server::new_async().await;
         let _m = _s
-            .mock("GET", "/api/")
+            .mock("GET", "/api/profile/")
             .match_header("Authorization", "Token token")
             .with_status(StatusCode::NOT_FOUND.as_u16() as usize)
             .create_async()
@@ -751,6 +751,8 @@ mod status_tests {
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert!(err.to_string().contains("404"));
+        assert!(err.to_string().contains("api/profile/"));
+        assert!(err.to_string().contains("2.1.0"));
         _m.assert();
     }
 
@@ -761,7 +763,7 @@ mod status_tests {
 
         let mut server = mockito::Server::new_async().await;
         let mock = server
-            .mock("GET", "/paperless/api/")
+            .mock("GET", "/paperless/api/profile/")
             .with_status(StatusCode::OK.as_u16() as usize)
             .create_async()
             .await;

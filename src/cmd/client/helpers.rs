@@ -18,8 +18,10 @@ pub(crate) fn get_title_from_filename(file: &std::path::Path) -> String {
     name.split_at(min(name.len(), MAX_TITLE_LENGTH)).0.to_string()
 }
 
-/// API path of the Paperless-ngx API root, relative to the base URL.
-pub(crate) const API_STATUS_PATH: &str = "api/";
+/// API path of the Paperless-ngx user profile, relative to the base URL.
+///
+/// Used by `status`: it answers any valid token with JSON and exists since Paperless-ngx 2.1.0.
+pub(crate) const API_STATUS_PATH: &str = "api/profile/";
 
 /// API path of the Paperless-ngx document upload, relative to the base URL.
 pub(crate) const API_UPLOAD_PATH: &str = "api/documents/post_document/";
@@ -51,7 +53,7 @@ mod tests {
             api_url("https://host", API_UPLOAD_PATH),
             "https://host/api/documents/post_document/"
         );
-        assert_eq!(api_url("https://host", API_STATUS_PATH), "https://host/api/");
+        assert_eq!(api_url("https://host", API_STATUS_PATH), "https://host/api/profile/");
     }
 
     #[test]
@@ -68,7 +70,7 @@ mod tests {
         // Edge case: sub-path installs keep their last path segment.
         assert_eq!(
             api_url("https://host/paperless/", API_STATUS_PATH),
-            "https://host/paperless/api/"
+            "https://host/paperless/api/profile/"
         );
         assert_eq!(
             api_url("https://host/paperless", API_UPLOAD_PATH),
@@ -79,6 +81,6 @@ mod tests {
     #[test]
     fn test_api_url_empty_endpoint_stays_relative() {
         // Failure case: an empty endpoint yields no usable URL; the request fails later.
-        assert_eq!(api_url("", API_STATUS_PATH), "/api/");
+        assert_eq!(api_url("", API_STATUS_PATH), "/api/profile/");
     }
 }
