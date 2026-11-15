@@ -206,11 +206,12 @@ pub fn delete_expired_files(files: &[PathBuf], period: usize) -> Result<usize, B
         for archived_file in archived_files {
             let archived_file = archived_file?.path();
             match delete_expired_file(&archived_file, period) {
-                Ok(()) => {
+                Ok(true) => {
                     let archived_display = archived_file.display();
                     debug!("File deleted successfully: {archived_display}");
                     deleted_count += 1;
                 }
+                Ok(false) => {}
                 Err(e) => error!("Error deleting file: {e}"),
             };
         }
@@ -231,11 +232,15 @@ pub fn delete_expired_files(files: &[PathBuf], period: usize) -> Result<usize, B
 /// * `file` - A reference to the `PathBuf` of the file to be deleted.
 /// * `period` - The period in days beyond which the file should be deleted.
 ///
+/// # Returns
+///
+/// `Ok(true)` if the file was removed, `Ok(false)` if it was kept.
+///
 /// # Errors
 ///
 /// Returns an error if the file's creation date cannot be determined,
 /// if the file is dated in the future, or if the file cannot be deleted.
-fn delete_expired_file(file: &PathBuf, period: usize) -> Result<(), Box<dyn Error>> {
+fn delete_expired_file(file: &PathBuf, period: usize) -> Result<bool, Box<dyn Error>> {
     let file_display = file.display();
     debug!("Called: Client::delete_expired_file; file: {file_display} period: {period}");
     let now = SystemTime::now();
@@ -253,9 +258,9 @@ fn delete_expired_file(file: &PathBuf, period: usize) -> Result<(), Box<dyn Erro
         debug!("Deleting file: {file_display}");
         fs::remove_file(file)?;
         info!("File {file_display} deleted");
+        Ok(true)
     } else {
         debug!("File {file_display} is not older than {period} days, skipping");
+        Ok(false)
     }
-
-    Ok(())
 }

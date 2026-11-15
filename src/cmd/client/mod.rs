@@ -6,6 +6,8 @@ mod helpers;
 mod http;
 
 #[cfg(test)]
+mod file_ops_tests;
+#[cfg(test)]
 mod tests;
 
 // Re-export Client and UploadOptions publicly so they can be used from main.rs
